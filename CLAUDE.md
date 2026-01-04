@@ -33,11 +33,28 @@ The app runs two separate Flutter engines (isolates) - one per screen. They comm
 - `lib/main_screen/display_controller.dart`: Riverpod providers for input state, IPC listening
 - `lib/keyboard_screen/keyboard_service.dart`: IPC sender service
 
+### Settings System
+
+- `lib/settings/settings_model.dart`: `AppSettings` data class with serialization
+- `lib/settings/settings_service.dart`: Persistence via `shared_preferences`
+- `lib/settings/settings_provider.dart`: Riverpod providers (`appSettingsProvider`, `keyboardVisibleProvider`)
+- `lib/settings/views/settings_view.dart`: Settings UI screen
+
+### Physical Button Integration
+
+Android BroadcastReceiver (`ToggleKeyboardReceiver.kt`) handles external intents:
+- `app.gsmlg.tele_deck.TOGGLE_KEYBOARD` - Toggle visibility
+- `app.gsmlg.tele_deck.SHOW_KEYBOARD` - Show keyboard
+- `app.gsmlg.tele_deck.HIDE_KEYBOARD` - Hide keyboard
+
+Communication flow: BroadcastReceiver → MethodChannel → Flutter provider state
+
 ### Multi-Display Management
 
 Uses `presentation_displays` package:
 - `DisplayManager.getDisplays()` to detect secondary displays
 - `showSecondaryDisplay(displayId, routerName)` to launch keyboard on secondary screen
+- `hideSecondaryDisplay(displayId)` to hide keyboard
 - `SecondaryDisplay` widget wraps keyboard UI to receive data from main screen
 
 ### State Management
@@ -46,6 +63,8 @@ Uses `flutter_riverpod` v2:
 - `inputTextProvider`: StateNotifier for the text buffer on main screen
 - `displayControllerProvider`: Manages IPC receive port lifecycle
 - `keyboardServiceProvider`: Keyboard IPC sender
+- `appSettingsProvider`: App settings with persistence
+- `keyboardVisibleProvider`: Current keyboard visibility state
 - `shiftEnabledProvider`, `capsLockProvider`: Keyboard modifier state
 
 ## Android Configuration
@@ -53,3 +72,4 @@ Uses `flutter_riverpod` v2:
 - `minSdk = 26` required for multi-display support
 - `resizeableActivity="true"` in AndroidManifest for foldable devices
 - `windowSoftInputMode="adjustNothing"` to prevent system keyboard
+- `ToggleKeyboardReceiver` registered for external intent handling

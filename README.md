@@ -17,6 +17,24 @@ Communication between screens uses low-latency IPC via Dart's `IsolateNameServer
 - Blinking cursor and character/word/line count display
 - Shift key with auto-disable after character input
 - Support for device folding/unfolding events
+- **Physical button binding** for keyboard toggle via Android Intents
+- **Configurable startup behavior** (hidden by default, show on startup, remember last state)
+- **Settings UI** accessible from both main screen and keyboard
+
+## Physical Button Binding
+
+Ayaneo Pocket DS (or other devices) can bind physical buttons to these actions:
+
+| Action | Intent |
+|--------|--------|
+| Toggle Keyboard | `app.gsmlg.tele_deck.TOGGLE_KEYBOARD` |
+| Show Keyboard | `app.gsmlg.tele_deck.SHOW_KEYBOARD` |
+| Hide Keyboard | `app.gsmlg.tele_deck.HIDE_KEYBOARD` |
+
+Test via ADB:
+```bash
+adb shell am broadcast -a app.gsmlg.tele_deck.TOGGLE_KEYBOARD
+```
 
 ## Requirements
 
@@ -46,6 +64,12 @@ lib/
 ├── shared/
 │   ├── constants.dart             # Theme colors, keyboard layout
 │   └── protocol.dart              # IPC event protocol (KeyboardEvent)
+├── settings/
+│   ├── settings_model.dart        # Settings data class
+│   ├── settings_provider.dart     # Riverpod state management
+│   ├── settings_service.dart      # Persistence layer
+│   └── views/
+│       └── settings_view.dart     # Settings UI
 ├── main_screen/
 │   ├── display_controller.dart    # IPC listener, Riverpod state
 │   └── views/
@@ -63,6 +87,7 @@ lib/
 - **State Management**: flutter_riverpod v2
 - **Multi-Screen**: presentation_displays
 - **IPC**: dart:ui IsolateNameServer + ReceivePort/SendPort
+- **Persistence**: shared_preferences
 
 ## License
 

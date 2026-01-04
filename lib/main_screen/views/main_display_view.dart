@@ -4,12 +4,22 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../settings/settings_provider.dart';
 import '../../shared/constants.dart';
 import '../display_controller.dart';
 
 /// Main display screen - shows the read-only virtual input field
 class MainDisplayView extends ConsumerStatefulWidget {
-  const MainDisplayView({super.key});
+  final VoidCallback? onToggleKeyboard;
+  final VoidCallback? onShowKeyboard;
+  final VoidCallback? onHideKeyboard;
+
+  const MainDisplayView({
+    super.key,
+    this.onToggleKeyboard,
+    this.onShowKeyboard,
+    this.onHideKeyboard,
+  });
 
   @override
   ConsumerState<MainDisplayView> createState() => _MainDisplayViewState();
@@ -53,7 +63,7 @@ class _MainDisplayViewState extends ConsumerState<MainDisplayView> {
         child: Column(
           children: [
             // Header
-            _buildHeader(),
+            _buildHeader(context),
             // Main input display
             Expanded(
               child: _buildInputDisplay(inputText),
@@ -66,7 +76,9 @@ class _MainDisplayViewState extends ConsumerState<MainDisplayView> {
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(BuildContext context) {
+    final isKeyboardVisible = ref.watch(keyboardVisibleProvider);
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -108,9 +120,61 @@ class _MainDisplayViewState extends ConsumerState<MainDisplayView> {
             ),
           ),
           const Spacer(),
+          // Keyboard toggle button
+          _buildKeyboardToggleButton(isKeyboardVisible),
+          const SizedBox(width: 12),
+          // Settings button
+          _buildSettingsButton(context),
+          const SizedBox(width: 12),
           // Connection status indicator
           _buildConnectionIndicator(),
         ],
+      ),
+    );
+  }
+
+  Widget _buildKeyboardToggleButton(bool isVisible) {
+    return GestureDetector(
+      onTap: widget.onToggleKeyboard,
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: isVisible
+                ? Color(TeleDeckColors.neonCyan)
+                : Color(TeleDeckColors.textPrimary).withValues(alpha: 0.3),
+            width: 1,
+          ),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Icon(
+          isVisible ? Icons.keyboard_hide : Icons.keyboard,
+          color: isVisible
+              ? Color(TeleDeckColors.neonCyan)
+              : Color(TeleDeckColors.textPrimary).withValues(alpha: 0.5),
+          size: 20,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSettingsButton(BuildContext context) {
+    return GestureDetector(
+      onTap: () => Navigator.pushNamed(context, '/settings'),
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: Color(TeleDeckColors.textPrimary).withValues(alpha: 0.3),
+            width: 1,
+          ),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Icon(
+          Icons.settings,
+          color: Color(TeleDeckColors.textPrimary).withValues(alpha: 0.7),
+          size: 20,
+        ),
       ),
     );
   }

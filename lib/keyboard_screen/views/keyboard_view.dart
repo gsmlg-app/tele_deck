@@ -44,6 +44,26 @@ class KeyboardView extends ConsumerWidget {
       ),
       child: Row(
         children: [
+          // Settings button (like Gboard)
+          GestureDetector(
+            onTap: () => _openSettings(context),
+            child: Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: Color(TeleDeckColors.textPrimary).withValues(alpha: 0.3),
+                  width: 1,
+                ),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Icon(
+                Icons.settings,
+                color: Color(TeleDeckColors.textPrimary).withValues(alpha: 0.7),
+                size: 16,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
           // Cyberpunk styled title
           ShaderMask(
             shaderCallback: (bounds) => LinearGradient(
@@ -107,6 +127,88 @@ class KeyboardView extends ConsumerWidget {
                   ),
                 ),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _openSettings(BuildContext context) {
+    // Show a dialog with settings info since we can't navigate to main screen
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Color(TeleDeckColors.secondaryBackground),
+        title: Text(
+          'SETTINGS',
+          style: GoogleFonts.robotoMono(
+            color: Color(TeleDeckColors.neonCyan),
+            fontWeight: FontWeight.bold,
+            letterSpacing: 2,
+          ),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Open the TeleDeck app on the main screen to access settings.',
+              style: GoogleFonts.robotoMono(
+                color: Color(TeleDeckColors.textPrimary),
+                fontSize: 14,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Physical Button Actions:',
+              style: GoogleFonts.robotoMono(
+                color: Color(TeleDeckColors.neonMagenta),
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            _buildActionInfo('Toggle', 'TOGGLE_KEYBOARD'),
+            _buildActionInfo('Show', 'SHOW_KEYBOARD'),
+            _buildActionInfo('Hide', 'HIDE_KEYBOARD'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'CLOSE',
+              style: GoogleFonts.robotoMono(
+                color: Color(TeleDeckColors.neonCyan),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionInfo(String label, String action) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        children: [
+          Text(
+            '$label: ',
+            style: GoogleFonts.robotoMono(
+              color: Color(TeleDeckColors.textPrimary),
+              fontSize: 11,
+            ),
+          ),
+          Expanded(
+            child: Text(
+              'app.gsmlg.tele_deck.$action',
+              style: GoogleFonts.robotoMono(
+                color: Color(TeleDeckColors.neonCyan).withValues(alpha: 0.8),
+                fontSize: 10,
+              ),
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],

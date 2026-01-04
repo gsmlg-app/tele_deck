@@ -31,6 +31,18 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+
+        <!-- BroadcastReceiver for keyboard toggle actions -->
+        <!-- Ayaneo Pocket DS can bind physical buttons to these actions -->
+        <receiver
+            android:name=".ToggleKeyboardReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="app.gsmlg.tele_deck.TOGGLE_KEYBOARD"/>
+                <action android:name="app.gsmlg.tele_deck.SHOW_KEYBOARD"/>
+                <action android:name="app.gsmlg.tele_deck.HIDE_KEYBOARD"/>
+            </intent-filter>
+        </receiver>
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and
