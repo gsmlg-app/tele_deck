@@ -6,10 +6,57 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sub_screen/model.dart';
 import 'package:sub_screen/sub_screen.dart';
 
+import 'keyboard_screen/views/keyboard_view.dart';
 import 'main_screen/views/main_display_view.dart';
 import 'settings/settings_provider.dart';
 import 'settings/views/settings_view.dart';
 import 'shared/constants.dart';
+
+/// Secondary entry point for the keyboard display
+/// This MUST be in the same library as main() for the engine to find it
+@pragma('vm:entry-point')
+void keyboardEntry() {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.light,
+      systemNavigationBarColor: Color(TeleDeckColors.darkBackground),
+      systemNavigationBarIconBrightness: Brightness.light,
+    ),
+  );
+
+  runApp(
+    const ProviderScope(
+      child: KeyboardApp(),
+    ),
+  );
+}
+
+/// Keyboard app for secondary display
+class KeyboardApp extends StatelessWidget {
+  const KeyboardApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'TeleDeck Keyboard',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        useMaterial3: true,
+        brightness: Brightness.dark,
+        scaffoldBackgroundColor: Color(TeleDeckColors.darkBackground),
+        colorScheme: ColorScheme.dark(
+          primary: Color(TeleDeckColors.neonCyan),
+          secondary: Color(TeleDeckColors.neonMagenta),
+          surface: Color(TeleDeckColors.secondaryBackground),
+        ),
+      ),
+      home: const KeyboardView(),
+    );
+  }
+}
 
 /// MethodChannel for receiving keyboard toggle commands from native Android
 const _toggleChannel = MethodChannel('app.gsmlg.tele_deck/keyboard_toggle');

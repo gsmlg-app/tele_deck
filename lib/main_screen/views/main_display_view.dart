@@ -109,17 +109,19 @@ class _MainDisplayViewState extends ConsumerState<MainDisplayView> {
             ),
           ),
           const SizedBox(width: 12),
-          // Title
-          Text(
-            'TELEDECK',
-            style: GoogleFonts.robotoMono(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Color(TeleDeckColors.neonCyan),
-              letterSpacing: 4,
+          // Title - Flexible to prevent overflow
+          Expanded(
+            child: Text(
+              'TELEDECK',
+              style: GoogleFonts.robotoMono(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Color(TeleDeckColors.neonCyan),
+                letterSpacing: 4,
+              ),
+              overflow: TextOverflow.ellipsis,
             ),
           ),
-          const Spacer(),
           // Keyboard toggle button
           _buildKeyboardToggleButton(isKeyboardVisible),
           const SizedBox(width: 12),
