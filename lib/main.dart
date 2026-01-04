@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'keyboard_screen/views/keyboard_view.dart';
+import 'logging/views/crash_log_viewer.dart';
+import 'settings/settings_provider.dart';
+import 'settings/views/settings_view.dart';
+import 'settings/views/setup_guide_view.dart';
 import 'shared/constants.dart';
 
-/// MethodChannel for IME communication with native Android
-const imeChannel = MethodChannel('tele_deck/ime');
-
-/// Provider for IME connection status
-final imeConnectionProvider = StateProvider<bool>((ref) => false);
+/// Provider to track if we should show crash logs (from deep link)
+final showCrashLogsProvider = StateProvider<bool>((ref) => false);
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,33 +26,55 @@ void main() {
 
   runApp(
     const ProviderScope(
-      child: TeleDeckKeyboardApp(),
+      child: TeleDeckLauncherApp(),
     ),
   );
 }
 
-/// Main keyboard app - renders on secondary display via IME Service
-class TeleDeckKeyboardApp extends ConsumerStatefulWidget {
-  const TeleDeckKeyboardApp({super.key});
+/// Launcher app - shows setup guide or settings
+class TeleDeckLauncherApp extends ConsumerStatefulWidget {
+  const TeleDeckLauncherApp({super.key});
 
   @override
-  ConsumerState<TeleDeckKeyboardApp> createState() => _TeleDeckKeyboardAppState();
+  ConsumerState<TeleDeckLauncherApp> createState() =>
+      _TeleDeckLauncherAppState();
 }
 
-class _TeleDeckKeyboardAppState extends ConsumerState<TeleDeckKeyboardApp> {
+class _TeleDeckLauncherAppState extends ConsumerState<TeleDeckLauncherApp>
+    with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
-    _setupIMEChannel();
+    WidgetsBinding.instance.addObserver(this);
+    _setupMethodChannelListener();
   }
 
-  void _setupIMEChannel() {
-    // Listen for connection status updates from native IME service
-    imeChannel.setMethodCallHandler((call) async {
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    // Refresh IME status when app resumes (user might have changed settings)
+    if (state == AppLifecycleState.resumed) {
+      ref.invalidate(setupGuideProvider);
+    }
+  }
+
+  void _setupMethodChannelListener() {
+    const settingsChannel = MethodChannel('app.gsmlg.tele_deck/settings');
+    settingsChannel.setMethodCallHandler((call) async {
       switch (call.method) {
-        case 'connectionStatus':
-          final connected = call.arguments['connected'] as bool? ?? false;
-          ref.read(imeConnectionProvider.notifier).state = connected;
+        case 'onIMEStatusChanged':
+          // Refresh setup guide when IME status changes
+          ref.invalidate(setupGuideProvider);
+          break;
+        case 'viewCrashLogs':
+          // Deep link from crash notification
+          ref.read(showCrashLogsProvider.notifier).state = true;
           break;
       }
     });
@@ -61,16 +83,16 @@ class _TeleDeckKeyboardAppState extends ConsumerState<TeleDeckKeyboardApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'TeleDeck Keyboard',
+      title: 'TeleDeck',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
         brightness: Brightness.dark,
-        scaffoldBackgroundColor: Color(TeleDeckColors.darkBackground),
+        scaffoldBackgroundColor: const Color(TeleDeckColors.darkBackground),
         colorScheme: ColorScheme.dark(
-          primary: Color(TeleDeckColors.neonCyan),
-          secondary: Color(TeleDeckColors.neonMagenta),
-          surface: Color(TeleDeckColors.secondaryBackground),
+          primary: const Color(TeleDeckColors.neonCyan),
+          secondary: const Color(TeleDeckColors.neonMagenta),
+          surface: const Color(TeleDeckColors.secondaryBackground),
         ),
       ),
       builder: (context, child) {
@@ -81,7 +103,72 @@ class _TeleDeckKeyboardAppState extends ConsumerState<TeleDeckKeyboardApp> {
           child: child!,
         );
       },
-      home: const KeyboardView(),
+      home: const _LauncherHome(),
+    );
+  }
+}
+
+/// Home widget that decides which view to show based on IME status
+class _LauncherHome extends ConsumerWidget {
+  const _LauncherHome();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final showCrashLogs = ref.watch(showCrashLogsProvider);
+    final setupStateAsync = ref.watch(setupGuideProvider);
+
+    // Handle deep link to crash logs
+    if (showCrashLogs) {
+      // Reset the flag and show crash logs
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(showCrashLogsProvider.notifier).state = false;
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (context) => const CrashLogViewer()),
+        );
+      });
+    }
+
+    return setupStateAsync.when(
+      loading: () => const Scaffold(
+        backgroundColor: Color(TeleDeckColors.darkBackground),
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      ),
+      error: (error, stack) => Scaffold(
+        backgroundColor: const Color(TeleDeckColors.darkBackground),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error, color: Colors.red, size: 48),
+              const SizedBox(height: 16),
+              Text(
+                'Error loading IME status',
+                style: TextStyle(color: Colors.red.shade300),
+              ),
+              const SizedBox(height: 8),
+              ElevatedButton(
+                onPressed: () => ref.invalidate(setupGuideProvider),
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+      ),
+      data: (setupState) {
+        // If setup is complete, show settings view
+        if (setupState.isComplete) {
+          return const SettingsView();
+        }
+        // Otherwise show setup guide
+        return SetupGuideView(
+          onComplete: () {
+            // Refresh to transition to settings view
+            ref.invalidate(setupGuideProvider);
+          },
+        );
+      },
     );
   }
 }

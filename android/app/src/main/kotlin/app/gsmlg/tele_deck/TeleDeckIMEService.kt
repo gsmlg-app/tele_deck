@@ -4,12 +4,17 @@ import android.content.Context
 import android.hardware.display.DisplayManager
 import android.inputmethodservice.InputMethodService
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.view.Display
 import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputMethodManager
 import android.widget.FrameLayout
+import io.flutter.FlutterInjector
+import io.flutter.embedding.android.FlutterView
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.embedding.engine.FlutterEngineCache
 import io.flutter.embedding.engine.dart.DartExecutor
@@ -27,6 +32,7 @@ class TeleDeckIMEService : InputMethodService() {
         private const val TAG = "TeleDeckIME"
         private const val ENGINE_ID = "tele_deck_ime_engine"
         private const val CHANNEL_NAME = "tele_deck/ime"
+        private const val DISPLAY_DEBOUNCE_MS = 500L
 
         // Singleton reference for the broadcast receiver
         var instance: TeleDeckIMEService? = null
@@ -38,6 +44,13 @@ class TeleDeckIMEService : InputMethodService() {
     private var presentation: VirtualKeyboardPresentation? = null
     private var displayManager: DisplayManager? = null
     private var secondaryDisplay: Display? = null
+    private var primaryFlutterView: FlutterView? = null
+    private var inputViewContainer: FrameLayout? = null
+
+    // Handler for debouncing display events
+    private val mainHandler = Handler(Looper.getMainLooper())
+    private var pendingDisplayAddedRunnable: Runnable? = null
+    private var pendingDisplayRemovedRunnable: Runnable? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -62,11 +75,12 @@ class TeleDeckIMEService : InputMethodService() {
         flutterEngine = FlutterEngineCache.getInstance().get(ENGINE_ID)
 
         if (flutterEngine == null) {
-            Log.d(TAG, "Creating new FlutterEngine")
+            Log.d(TAG, "Creating new FlutterEngine with imeMain entrypoint")
             flutterEngine = FlutterEngine(this).apply {
-                // Execute the Dart entrypoint
+                // Execute the custom imeMain Dart entrypoint
+                val appBundlePath = FlutterInjector.instance().flutterLoader().findAppBundlePath()
                 dartExecutor.executeDartEntrypoint(
-                    DartExecutor.DartEntrypoint.createDefault()
+                    DartExecutor.DartEntrypoint(appBundlePath, "imeMain")
                 )
 
                 // Cache the engine for reuse
@@ -119,6 +133,12 @@ class TeleDeckIMEService : InputMethodService() {
                     }
                     "getConnectionStatus" -> {
                         result.success(currentInputConnection != null)
+                    }
+                    "isImeEnabled" -> {
+                        result.success(isImeEnabled())
+                    }
+                    "isImeActive" -> {
+                        result.success(isImeActive())
                     }
                     else -> {
                         result.notImplemented()
@@ -194,6 +214,60 @@ class TeleDeckIMEService : InputMethodService() {
         }
     }
 
+    /**
+     * Create a FlutterView for primary screen rendering (single-screen fallback mode).
+     * The view is constrained to max 50% of screen height per spec.
+     */
+    private fun createPrimaryFlutterView(): View {
+        Log.d(TAG, "Creating primary FlutterView for single-screen mode")
+
+        val engine = flutterEngine ?: run {
+            Log.e(TAG, "FlutterEngine not initialized")
+            return createEmptyView()
+        }
+
+        // Create container with max 50% height
+        val displayMetrics = resources.displayMetrics
+        val maxHeight = (displayMetrics.heightPixels * 0.5).toInt()
+
+        inputViewContainer = FrameLayout(this).apply {
+            layoutParams = ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                maxHeight
+            )
+        }
+
+        // Create and attach FlutterView
+        primaryFlutterView = FlutterView(this).apply {
+            layoutParams = FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
+            )
+        }
+
+        // Attach engine to FlutterView
+        primaryFlutterView?.attachToFlutterEngine(engine)
+
+        inputViewContainer?.addView(primaryFlutterView)
+
+        // Notify Flutter about primary fallback mode
+        notifyDisplayModeChanged("primary_fallback", null)
+
+        return inputViewContainer!!
+    }
+
+    /**
+     * Create an empty 0-height view (used when FlutterEngine is not ready)
+     */
+    private fun createEmptyView(): View {
+        return FrameLayout(this).apply {
+            layoutParams = ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                0
+            )
+        }
+    }
+
     private fun findSecondaryDisplay() {
         displayManager?.displays?.forEach { display ->
             if (display.displayId != Display.DEFAULT_DISPLAY) {
@@ -208,23 +282,37 @@ class TeleDeckIMEService : InputMethodService() {
 
     private val displayListener = object : DisplayManager.DisplayListener {
         override fun onDisplayAdded(displayId: Int) {
-            Log.d(TAG, "Display added: $displayId")
-            val display = displayManager?.getDisplay(displayId)
-            if (display != null && displayId != Display.DEFAULT_DISPLAY) {
-                secondaryDisplay = display
-                // If input is active, show presentation on new display
-                if (presentation == null) {
-                    showKeyboardPresentation()
-                }
+            Log.d(TAG, "Display added: $displayId - scheduling debounced handling")
+
+            // Cancel any pending remove operation (prevent race condition)
+            pendingDisplayRemovedRunnable?.let { mainHandler.removeCallbacks(it) }
+            pendingDisplayRemovedRunnable = null
+
+            // Cancel previous pending add
+            pendingDisplayAddedRunnable?.let { mainHandler.removeCallbacks(it) }
+
+            // Debounce display added event
+            pendingDisplayAddedRunnable = Runnable {
+                handleDisplayAdded(displayId)
             }
+            mainHandler.postDelayed(pendingDisplayAddedRunnable!!, DISPLAY_DEBOUNCE_MS)
         }
 
         override fun onDisplayRemoved(displayId: Int) {
-            Log.d(TAG, "Display removed: $displayId")
-            if (secondaryDisplay?.displayId == displayId) {
-                hideKeyboardPresentation()
-                secondaryDisplay = null
+            Log.d(TAG, "Display removed: $displayId - scheduling debounced handling")
+
+            // Cancel any pending add operation
+            pendingDisplayAddedRunnable?.let { mainHandler.removeCallbacks(it) }
+            pendingDisplayAddedRunnable = null
+
+            // Cancel previous pending remove
+            pendingDisplayRemovedRunnable?.let { mainHandler.removeCallbacks(it) }
+
+            // Debounce display removed event
+            pendingDisplayRemovedRunnable = Runnable {
+                handleDisplayRemoved(displayId)
             }
+            mainHandler.postDelayed(pendingDisplayRemovedRunnable!!, DISPLAY_DEBOUNCE_MS)
         }
 
         override fun onDisplayChanged(displayId: Int) {
@@ -232,15 +320,61 @@ class TeleDeckIMEService : InputMethodService() {
         }
     }
 
+    /**
+     * Handle display added after debounce period
+     */
+    private fun handleDisplayAdded(displayId: Int) {
+        Log.d(TAG, "Handling display added: $displayId")
+        val display = displayManager?.getDisplay(displayId)
+        if (display != null && displayId != Display.DEFAULT_DISPLAY) {
+            secondaryDisplay = display
+
+            // Clean up primary view if we were in fallback mode
+            cleanupPrimaryFlutterView()
+
+            // Show presentation on new display if input is active
+            if (currentInputConnection != null && presentation == null) {
+                showKeyboardPresentation()
+            }
+
+            // Request input view recreation to switch modes
+            setInputView(createEmptyView())
+        }
+    }
+
+    /**
+     * Handle display removed after debounce period
+     */
+    private fun handleDisplayRemoved(displayId: Int) {
+        Log.d(TAG, "Handling display removed: $displayId")
+
+        // Null-safe check for secondary display
+        val currentSecondaryId = secondaryDisplay?.displayId
+        if (currentSecondaryId == displayId) {
+            // Safely hide presentation
+            hideKeyboardPresentation()
+            secondaryDisplay = null
+
+            // If input is still active, switch to primary fallback mode
+            if (currentInputConnection != null) {
+                Log.d(TAG, "Switching to primary fallback mode")
+                setInputView(createPrimaryFlutterView())
+            }
+        }
+    }
+
     override fun onCreateInputView(): View {
-        Log.d(TAG, "onCreateInputView")
-        // Return a 0-height view for the primary screen
-        // The actual keyboard is shown on the secondary display via Presentation
-        return FrameLayout(this).apply {
-            layoutParams = ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                0  // 0-height to not take space on primary screen
-            )
+        Log.d(TAG, "onCreateInputView - hasSecondaryDisplay: ${secondaryDisplay != null}")
+
+        return if (secondaryDisplay != null) {
+            // Secondary display exists - return 0-height view for primary screen
+            // The actual keyboard is shown on the secondary display via Presentation
+            Log.d(TAG, "Using secondary display mode - returning 0-height view")
+            createEmptyView()
+        } else {
+            // No secondary display - render keyboard on primary with 50% max height
+            Log.d(TAG, "Using primary fallback mode - rendering on primary screen")
+            createPrimaryFlutterView()
         }
     }
 
@@ -262,8 +396,28 @@ class TeleDeckIMEService : InputMethodService() {
         // Notify Flutter about disconnection
         notifyFlutterConnectionStatus(false)
 
-        // Hide keyboard presentation
+        // Hide keyboard presentation (secondary display mode)
         hideKeyboardPresentation()
+
+        // Clean up primary FlutterView if used (single-screen mode)
+        cleanupPrimaryFlutterView()
+    }
+
+    /**
+     * Clean up the primary FlutterView when switching modes or finishing input
+     */
+    private fun cleanupPrimaryFlutterView() {
+        primaryFlutterView?.let { view ->
+            Log.d(TAG, "Cleaning up primary FlutterView")
+            try {
+                view.detachFromFlutterEngine()
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to detach FlutterView", e)
+            }
+        }
+        primaryFlutterView = null
+        inputViewContainer?.removeAllViews()
+        inputViewContainer = null
     }
 
     private fun showKeyboardPresentation() {
@@ -283,28 +437,92 @@ class TeleDeckIMEService : InputMethodService() {
             presentation = VirtualKeyboardPresentation(this, display, engine).apply {
                 try {
                     show()
+                    // Notify Flutter we're in secondary display mode
+                    notifyDisplayModeChanged("secondary", display)
                 } catch (e: Exception) {
                     Log.e(TAG, "Failed to show presentation", e)
+                    // Log crash with display state
+                    CrashLogger.logException(
+                        context = this@TeleDeckIMEService,
+                        exception = e as? Exception ?: Exception(e.message),
+                        displayState = getDisplayState(),
+                        engineState = "running"
+                    )
                     presentation = null
                 }
             }
         }
     }
 
+    /**
+     * Get current display state for crash logging
+     */
+    private fun getDisplayState(): Map<String, Any?> {
+        val displayMetrics = resources.displayMetrics
+        return CrashLogger.getDisplayStateMap(
+            hasSecondaryDisplay = secondaryDisplay != null,
+            secondaryDisplayId = secondaryDisplay?.displayId,
+            primaryWidth = displayMetrics.widthPixels,
+            primaryHeight = displayMetrics.heightPixels,
+            secondaryWidth = secondaryDisplay?.mode?.physicalWidth,
+            secondaryHeight = secondaryDisplay?.mode?.physicalHeight
+        )
+    }
+
     private fun hideKeyboardPresentation() {
-        presentation?.let {
+        // Use local variable to prevent race conditions during rapid disconnect
+        val currentPresentation = presentation
+        presentation = null
+
+        currentPresentation?.let {
             Log.d(TAG, "Hiding keyboard presentation")
             try {
-                it.dismiss()
+                if (it.isShowing) {
+                    it.dismiss()
+                }
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to dismiss presentation", e)
             }
         }
-        presentation = null
     }
 
     private fun notifyFlutterConnectionStatus(connected: Boolean) {
         methodChannel?.invokeMethod("connectionStatus", mapOf("connected" to connected))
+    }
+
+    /**
+     * Notify Flutter about display mode change
+     */
+    private fun notifyDisplayModeChanged(mode: String, display: Display?) {
+        val width = display?.mode?.physicalWidth ?: resources.displayMetrics.widthPixels
+        val height = display?.mode?.physicalHeight ?: resources.displayMetrics.heightPixels
+        methodChannel?.invokeMethod("displayModeChanged", mapOf(
+            "mode" to mode,
+            "displayWidth" to width,
+            "displayHeight" to height
+        ))
+    }
+
+    /**
+     * Check if TeleDeck is enabled in system keyboard settings
+     */
+    private fun isImeEnabled(): Boolean {
+        val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+        return imm.enabledInputMethodList.any {
+            it.packageName == packageName
+        }
+    }
+
+    /**
+     * Check if TeleDeck is the currently active keyboard
+     */
+    private fun isImeActive(): Boolean {
+        val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+        val currentIme = android.provider.Settings.Secure.getString(
+            contentResolver,
+            android.provider.Settings.Secure.DEFAULT_INPUT_METHOD
+        )
+        return currentIme?.contains(packageName) == true
     }
 
     /**
@@ -336,11 +554,20 @@ class TeleDeckIMEService : InputMethodService() {
         Log.d(TAG, "TeleDeckIMEService onDestroy")
         instance = null
 
+        // Cancel any pending debounced operations
+        pendingDisplayAddedRunnable?.let { mainHandler.removeCallbacks(it) }
+        pendingDisplayRemovedRunnable?.let { mainHandler.removeCallbacks(it) }
+        pendingDisplayAddedRunnable = null
+        pendingDisplayRemovedRunnable = null
+
         // Clean up display listener
         displayManager?.unregisterDisplayListener(displayListener)
 
-        // Clean up presentation
+        // Clean up presentation (secondary display mode)
         hideKeyboardPresentation()
+
+        // Clean up primary FlutterView (single-screen mode)
+        cleanupPrimaryFlutterView()
 
         // Don't destroy the FlutterEngine - it's cached for reuse
         // FlutterEngineCache handles cleanup

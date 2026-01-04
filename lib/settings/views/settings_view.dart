@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../logging/views/crash_log_viewer.dart';
 import '../../shared/constants.dart';
 import '../settings_provider.dart';
 
@@ -68,6 +69,14 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
     } catch (e) {
       debugPrint('Error opening IME picker: $e');
     }
+  }
+
+  void _openCrashLogViewer(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const CrashLogViewer(),
+      ),
+    );
   }
 
   @override
@@ -207,6 +216,16 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
                 color: Color(TeleDeckColors.textPrimary).withValues(alpha: 0.6),
               ),
             ),
+          ),
+          const SizedBox(height: 24),
+
+          // Diagnostics Section
+          _buildSectionHeader('DIAGNOSTICS'),
+          _buildActionButton(
+            title: 'View Crash Logs',
+            subtitle: 'View keyboard crash reports and error details',
+            icon: Icons.bug_report,
+            onTap: () => _openCrashLogViewer(context),
           ),
           const SizedBox(height: 24),
 

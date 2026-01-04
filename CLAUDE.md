@@ -74,3 +74,10 @@ Uses `flutter_riverpod` v2:
 - `resizeableActivity="true"` in AndroidManifest for foldable devices
 - `windowSoftInputMode="adjustNothing"` to prevent system keyboard
 - `ToggleKeyboardReceiver` registered for external intent handling
+
+## Active Technologies
+- Dart 3.10+ / Kotlin (Android) + Flutter 3.10+, flutter_riverpod v2, shared_preferences (001-dual-screen-ime-entry)
+- shared_preferences for settings, file-based crash logs (7-day retention) (001-dual-screen-ime-entry)
+
+## Recent Changes
+- 001-dual-screen-ime-entry: Added Dart 3.10+ / Kotlin (Android) + Flutter 3.10+, flutter_riverpod v2, shared_preferences

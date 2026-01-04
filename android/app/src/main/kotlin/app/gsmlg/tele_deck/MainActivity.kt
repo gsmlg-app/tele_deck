@@ -20,9 +20,13 @@ class MainActivity : FlutterActivity() {
 
     companion object {
         private const val CHANNEL = "app.gsmlg.tele_deck/settings"
+        private const val IME_CHANNEL = "tele_deck/ime"
+        private const val CRASH_LOG_CHANNEL = "app.gsmlg.tele_deck/crash_logs"
     }
 
     private var settingsChannel: MethodChannel? = null
+    private var imeChannel: MethodChannel? = null
+    private var crashLogChannel: MethodChannel? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -50,6 +54,54 @@ class MainActivity : FlutterActivity() {
                         "enabled" to isIMEEnabled(),
                         "selected" to isIMESelected()
                     ))
+                }
+                else -> {
+                    result.notImplemented()
+                }
+            }
+        }
+
+        // Setup IME MethodChannel for launcher-side IME operations
+        imeChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, IME_CHANNEL)
+        imeChannel?.setMethodCallHandler { call, result ->
+            when (call.method) {
+                "isImeEnabled" -> {
+                    result.success(isIMEEnabled())
+                }
+                "isImeActive" -> {
+                    result.success(isIMESelected())
+                }
+                "openImeSettings" -> {
+                    openIMESettings()
+                    result.success(null)
+                }
+                else -> {
+                    result.notImplemented()
+                }
+            }
+        }
+
+        // Setup crash log MethodChannel
+        crashLogChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CRASH_LOG_CHANNEL)
+        crashLogChannel?.setMethodCallHandler { call, result ->
+            when (call.method) {
+                "getCrashLogs" -> {
+                    val logs = CrashLogger.getCrashLogs(this)
+                    val logsAsString = logs.map { it.toString() }
+                    result.success(logsAsString)
+                }
+                "getCrashLogDetail" -> {
+                    val id = call.argument<String>("id")
+                    if (id != null) {
+                        val log = CrashLogger.getCrashLogDetail(this, id)
+                        result.success(log?.toString())
+                    } else {
+                        result.error("INVALID_ARGUMENT", "id is required", null)
+                    }
+                }
+                "clearCrashLogs" -> {
+                    val success = CrashLogger.clearCrashLogs(this)
+                    result.success(success)
                 }
                 else -> {
                     result.notImplemented()
@@ -122,10 +174,30 @@ class MainActivity : FlutterActivity() {
         } catch (e: Exception) {
             // Ignore errors during status check
         }
+
+        // Handle VIEW_CRASH_LOGS intent deep link
+        handleCrashLogIntent()
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleCrashLogIntent()
+    }
+
+    private fun handleCrashLogIntent() {
+        if (intent?.action == "app.gsmlg.tele_deck.VIEW_CRASH_LOGS") {
+            // Notify Flutter to show crash logs
+            settingsChannel?.invokeMethod("viewCrashLogs", null)
+            // Clear the intent to prevent re-triggering
+            intent = Intent()
+        }
     }
 
     override fun onDestroy() {
         settingsChannel = null
+        imeChannel = null
+        crashLogChannel = null
         super.onDestroy()
     }
 }

@@ -11,15 +11,18 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:tele_deck/main.dart';
 
 void main() {
-  testWidgets('TeleDeck keyboard app smoke test', (WidgetTester tester) async {
+  testWidgets('TeleDeck launcher app smoke test', (WidgetTester tester) async {
     // Build our app and trigger a frame.
     await tester.pumpWidget(
       const ProviderScope(
-        child: TeleDeckKeyboardApp(),
+        child: TeleDeckLauncherApp(),
       ),
     );
 
-    // Verify that the keyboard header is displayed
-    expect(find.text('CONTROL DECK'), findsOneWidget);
+    // Wait for the async setup to complete
+    await tester.pump();
+
+    // Verify that the app title is displayed
+    expect(find.text('TeleDeck'), findsOneWidget);
   });
 }
