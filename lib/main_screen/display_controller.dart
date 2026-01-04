@@ -37,6 +37,11 @@ class InputTextNotifier extends StateNotifier<String> {
     state = '';
   }
 
+  /// Add a tab character
+  void addTab() {
+    state = '$state\t';
+  }
+
   /// Handle incoming keyboard event
   void handleEvent(KeyboardEvent event) {
     switch (event) {
@@ -55,6 +60,26 @@ class InputTextNotifier extends StateNotifier<String> {
         clear();
       case Shift():
         // Handled on keyboard side
+        break;
+      case Tab():
+        addTab();
+      case Escape():
+        // Could be used to cancel input or close dialogs
+        break;
+      case Delete():
+        // Forward delete - for now, same as backspace
+        removeLastCharacter();
+      case FunctionKey():
+        // Function keys - could trigger app-specific actions
+        break;
+      case ArrowKey():
+        // Arrow keys - could be used for cursor movement
+        break;
+      case Modifier():
+        // Modifier keys - handled on keyboard side
+        break;
+      case CapsLock():
+        // Caps lock - handled on keyboard side
         break;
     }
   }

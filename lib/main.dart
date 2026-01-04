@@ -53,6 +53,16 @@ class KeyboardApp extends StatelessWidget {
           surface: Color(TeleDeckColors.secondaryBackground),
         ),
       ),
+      // Allow all orientations for secondary display
+      builder: (context, child) {
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(
+            // Ensure text scales appropriately
+            textScaler: TextScaler.noScaling,
+          ),
+          child: child!,
+        );
+      },
       home: const KeyboardView(),
     );
   }

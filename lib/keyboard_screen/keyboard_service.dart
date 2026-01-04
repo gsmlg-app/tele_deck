@@ -68,6 +68,41 @@ class KeyboardService {
   bool sendClear() {
     return sendEvent(const Clear());
   }
+
+  /// Send tab event
+  bool sendTab() {
+    return sendEvent(const Tab());
+  }
+
+  /// Send escape event
+  bool sendEscape() {
+    return sendEvent(const Escape());
+  }
+
+  /// Send delete (forward) event
+  bool sendDelete() {
+    return sendEvent(const Delete());
+  }
+
+  /// Send function key event (F1-F12)
+  bool sendFunctionKey(int number) {
+    return sendEvent(FunctionKey(number));
+  }
+
+  /// Send arrow key event
+  bool sendArrowKey(ArrowDirection direction) {
+    return sendEvent(ArrowKey(direction));
+  }
+
+  /// Send modifier key event
+  bool sendModifier(ModifierType modifier, {required bool pressed}) {
+    return sendEvent(Modifier(modifier, pressed: pressed));
+  }
+
+  /// Send caps lock event
+  bool sendCapsLock(bool enabled) {
+    return sendEvent(CapsLock(enabled));
+  }
 }
 
 /// Provider for keyboard service
@@ -78,5 +113,26 @@ final keyboardServiceProvider = Provider<KeyboardService>((ref) {
 /// Provider for shift state
 final shiftEnabledProvider = StateProvider<bool>((ref) => false);
 
+/// Provider for shift lock state (when long pressed)
+final shiftLockedProvider = StateProvider<bool>((ref) => false);
+
 /// Provider for caps lock state
 final capsLockProvider = StateProvider<bool>((ref) => false);
+
+/// Provider for ctrl key state
+final ctrlEnabledProvider = StateProvider<bool>((ref) => false);
+
+/// Provider for alt key state
+final altEnabledProvider = StateProvider<bool>((ref) => false);
+
+/// Provider for super key state
+final superEnabledProvider = StateProvider<bool>((ref) => false);
+
+/// Provider for fn key state
+final fnEnabledProvider = StateProvider<bool>((ref) => false);
+
+/// Keyboard layout mode
+enum KeyboardMode { standard, numpad, emoji }
+
+/// Provider for keyboard layout mode
+final keyboardModeProvider = StateProvider<KeyboardMode>((ref) => KeyboardMode.standard);

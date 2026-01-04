@@ -14,11 +14,15 @@ class AppSettings {
   /// Last known visibility state (used when rememberLastState is true)
   final bool lastVisibilityState;
 
+  /// Keyboard rotation in quarter turns (0=0°, 1=90°, 2=180°, 3=270°)
+  final int keyboardRotation;
+
   const AppSettings({
     this.showKeyboardOnStartup = false,
     this.preferredDisplayIndex = 1,
     this.rememberLastState = false,
     this.lastVisibilityState = false,
+    this.keyboardRotation = 0,
   });
 
   /// Create settings from JSON map
@@ -28,6 +32,7 @@ class AppSettings {
       preferredDisplayIndex: json['preferredDisplayIndex'] as int? ?? 1,
       rememberLastState: json['rememberLastState'] as bool? ?? false,
       lastVisibilityState: json['lastVisibilityState'] as bool? ?? false,
+      keyboardRotation: json['keyboardRotation'] as int? ?? 0,
     );
   }
 
@@ -38,6 +43,7 @@ class AppSettings {
       'preferredDisplayIndex': preferredDisplayIndex,
       'rememberLastState': rememberLastState,
       'lastVisibilityState': lastVisibilityState,
+      'keyboardRotation': keyboardRotation,
     };
   }
 
@@ -47,12 +53,14 @@ class AppSettings {
     int? preferredDisplayIndex,
     bool? rememberLastState,
     bool? lastVisibilityState,
+    int? keyboardRotation,
   }) {
     return AppSettings(
       showKeyboardOnStartup: showKeyboardOnStartup ?? this.showKeyboardOnStartup,
       preferredDisplayIndex: preferredDisplayIndex ?? this.preferredDisplayIndex,
       rememberLastState: rememberLastState ?? this.rememberLastState,
       lastVisibilityState: lastVisibilityState ?? this.lastVisibilityState,
+      keyboardRotation: keyboardRotation ?? this.keyboardRotation,
     );
   }
 
@@ -71,7 +79,8 @@ class AppSettings {
         other.showKeyboardOnStartup == showKeyboardOnStartup &&
         other.preferredDisplayIndex == preferredDisplayIndex &&
         other.rememberLastState == rememberLastState &&
-        other.lastVisibilityState == lastVisibilityState;
+        other.lastVisibilityState == lastVisibilityState &&
+        other.keyboardRotation == keyboardRotation;
   }
 
   @override
@@ -81,6 +90,7 @@ class AppSettings {
       preferredDisplayIndex,
       rememberLastState,
       lastVisibilityState,
+      keyboardRotation,
     );
   }
 }

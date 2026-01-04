@@ -50,6 +50,14 @@ class SettingsNotifier extends StateNotifier<AppSettings> {
       state = state.copyWith(lastVisibilityState: isVisible);
     }
   }
+
+  /// Update keyboard rotation (0-3 for 0°, 90°, 180°, 270°)
+  Future<void> setKeyboardRotation(int value) async {
+    state = await _service.updateSetting(
+      current: state,
+      keyboardRotation: value % 4,
+    );
+  }
 }
 
 /// Provider for app settings state

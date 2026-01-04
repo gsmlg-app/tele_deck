@@ -52,12 +52,14 @@ class SettingsService {
     int? preferredDisplayIndex,
     bool? rememberLastState,
     bool? lastVisibilityState,
+    int? keyboardRotation,
   }) async {
     final updated = current.copyWith(
       showKeyboardOnStartup: showKeyboardOnStartup,
       preferredDisplayIndex: preferredDisplayIndex,
       rememberLastState: rememberLastState,
       lastVisibilityState: lastVisibilityState,
+      keyboardRotation: keyboardRotation,
     );
 
     await saveSettings(updated);

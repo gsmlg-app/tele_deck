@@ -86,6 +86,45 @@ class SettingsView extends ConsumerWidget {
           ),
           const SizedBox(height: 24),
 
+          // Display Section
+          _buildSectionHeader('DISPLAY'),
+          _buildSettingsTile(
+            title: 'Keyboard Rotation',
+            subtitle: _getRotationLabel(settings.keyboardRotation),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: Icon(
+                    Icons.rotate_left,
+                    color: Color(TeleDeckColors.neonCyan),
+                  ),
+                  onPressed: () {
+                    final newRotation = (settings.keyboardRotation - 1 + 4) % 4;
+                    debugPrint('Setting rotation to: $newRotation');
+                    ref
+                        .read(appSettingsProvider.notifier)
+                        .setKeyboardRotation(newRotation);
+                  },
+                ),
+                IconButton(
+                  icon: Icon(
+                    Icons.rotate_right,
+                    color: Color(TeleDeckColors.neonCyan),
+                  ),
+                  onPressed: () {
+                    final newRotation = (settings.keyboardRotation + 1) % 4;
+                    debugPrint('Setting rotation to: $newRotation');
+                    ref
+                        .read(appSettingsProvider.notifier)
+                        .setKeyboardRotation(newRotation);
+                  },
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+
           // Hotkey Info Section
           _buildSectionHeader('PHYSICAL BUTTON BINDING'),
           _buildInfoTile(
@@ -141,6 +180,21 @@ class SettingsView extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  String _getRotationLabel(int rotation) {
+    switch (rotation) {
+      case 0:
+        return '0° (Default)';
+      case 1:
+        return '90° Clockwise';
+      case 2:
+        return '180° Flipped';
+      case 3:
+        return '270° Counter-clockwise';
+      default:
+        return '0° (Default)';
+    }
   }
 
   Widget _buildSettingsTile({
