@@ -75,7 +75,7 @@ class _KeyboardKeyState extends State<KeyboardKey>
     return Expanded(
       flex: (widget.flex * 10).toInt(),
       child: Padding(
-        padding: const EdgeInsets.all(3),
+        padding: const EdgeInsets.all(2),
         child: GestureDetector(
           onTapDown: _handleTapDown,
           onTapUp: _handleTapUp,
@@ -83,57 +83,60 @@ class _KeyboardKeyState extends State<KeyboardKey>
           child: AnimatedBuilder(
             animation: _glowAnimation,
             builder: (context, child) {
-              return Container(
-                height: 52,
-                decoration: BoxDecoration(
-                  color: _isPressed
-                      ? Color(TeleDeckColors.keyPressed)
-                      : Color(TeleDeckColors.keySurface),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: accentColor.withValues(
-                      alpha: 0.3 + (_glowAnimation.value * 0.5),
-                    ),
-                    width: 1,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
+              return SizedBox.expand(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: _isPressed
+                        ? Color(TeleDeckColors.keyPressed)
+                        : Color(TeleDeckColors.keySurface),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
                       color: accentColor.withValues(
-                        alpha: _glowAnimation.value * 0.4,
+                        alpha: 0.3 + (_glowAnimation.value * 0.5),
                       ),
-                      blurRadius: 12 * _glowAnimation.value,
-                      spreadRadius: 2 * _glowAnimation.value,
+                      width: 1,
                     ),
-                    // Inner glow effect
-                    if (_isPressed)
+                    boxShadow: [
                       BoxShadow(
-                        color: accentColor.withValues(alpha: 0.2),
-                        blurRadius: 4,
-                        spreadRadius: -2,
-                        offset: const Offset(0, 2),
+                        color: accentColor.withValues(
+                          alpha: _glowAnimation.value * 0.4,
+                        ),
+                        blurRadius: 8 * _glowAnimation.value,
+                        spreadRadius: 1 * _glowAnimation.value,
                       ),
-                  ],
-                ),
-                child: Center(
-                  child: widget.icon != null
-                      ? Icon(
-                          widget.icon,
-                          color: widget.isSpecial
-                              ? accentColor
-                              : Color(TeleDeckColors.textPrimary),
-                          size: 22,
-                        )
-                      : Text(
-                          widget.displayLabel ?? widget.label,
-                          style: GoogleFonts.robotoMono(
-                            fontSize: widget.isSpecial ? 12 : 16,
-                            fontWeight: FontWeight.w600,
+                      if (_isPressed)
+                        BoxShadow(
+                          color: accentColor.withValues(alpha: 0.2),
+                          blurRadius: 4,
+                          spreadRadius: -2,
+                          offset: const Offset(0, 2),
+                        ),
+                    ],
+                  ),
+                  child: Center(
+                    child: widget.icon != null
+                        ? Icon(
+                            widget.icon,
                             color: widget.isSpecial
                                 ? accentColor
                                 : Color(TeleDeckColors.textPrimary),
-                            letterSpacing: widget.isSpecial ? 1 : 0,
+                            size: 20,
+                          )
+                        : FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              widget.displayLabel ?? widget.label,
+                              style: GoogleFonts.robotoMono(
+                                fontSize: widget.isSpecial ? 11 : 14,
+                                fontWeight: FontWeight.w600,
+                                color: widget.isSpecial
+                                    ? accentColor
+                                    : Color(TeleDeckColors.textPrimary),
+                                letterSpacing: widget.isSpecial ? 1 : 0,
+                              ),
+                            ),
                           ),
-                        ),
+                  ),
                 ),
               );
             },

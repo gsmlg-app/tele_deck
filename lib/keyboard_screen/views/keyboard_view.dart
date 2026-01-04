@@ -33,7 +33,7 @@ class KeyboardView extends ConsumerWidget {
     final service = ref.watch(keyboardServiceProvider);
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       decoration: BoxDecoration(
         border: Border(
           bottom: BorderSide(
@@ -223,7 +223,7 @@ class KeyboardView extends ConsumerWidget {
     final isUpperCase = isShiftEnabled || isCapsLock;
 
     return Container(
-      padding: const EdgeInsets.all(8),
+      padding: const EdgeInsets.all(4),
       child: Column(
         children: [
           // Number row
