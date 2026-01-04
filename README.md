@@ -85,7 +85,7 @@ lib/
 
 - **Framework**: Flutter / Dart 3.0+
 - **State Management**: flutter_riverpod v2
-- **Multi-Screen**: presentation_displays
+- **Multi-Screen**: sub_screen (Android Presentation API)
 - **IPC**: dart:ui IsolateNameServer + ReceivePort/SendPort
 - **Persistence**: shared_preferences
 

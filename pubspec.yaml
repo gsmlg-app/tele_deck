@@ -35,7 +35,7 @@ dependencies:
   flutter_riverpod: ^2.6.1
 
   # Multi-screen presentation displays
-  presentation_displays: ^1.0.0
+  sub_screen: ^0.1.9
 
   # Google Fonts for monospace font
   google_fonts: ^6.2.1

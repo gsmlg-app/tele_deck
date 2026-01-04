@@ -3,8 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:presentation_displays/display.dart';
-import 'package:presentation_displays/displays_manager.dart';
+import 'package:sub_screen/model.dart';
+import 'package:sub_screen/sub_screen.dart';
 
 import 'main_screen/views/main_display_view.dart';
 import 'settings/settings_provider.dart';
@@ -42,10 +42,7 @@ class TeleDeckApp extends ConsumerStatefulWidget {
 }
 
 class _TeleDeckAppState extends ConsumerState<TeleDeckApp> {
-  DisplayManager? _displayManager;
-  Display? _secondaryDisplay;
-  bool _secondaryLaunched = false;
-  StreamSubscription<int?>? _displaySubscription;
+  int? _secondaryDisplayId;
 
   @override
   void initState() {
@@ -59,16 +56,56 @@ class _TeleDeckAppState extends ConsumerState<TeleDeckApp> {
     await ref.read(appSettingsProvider.notifier).loadSettings();
     ref.read(settingsInitializedProvider.notifier).state = true;
 
-    // Initialize display manager
-    await _initDisplayManager();
+    // Initialize display monitoring
+    await _initDisplayMonitoring();
 
     // Setup native method channel listener for keyboard toggle
     _setupToggleListener();
 
     // Check initial visibility based on settings
     final settings = ref.read(appSettingsProvider);
-    if (settings.initialKeyboardVisible && _secondaryDisplay != null) {
-      _showKeyboard();
+    if (settings.initialKeyboardVisible && _secondaryDisplayId != null) {
+      ref.read(keyboardVisibleProvider.notifier).state = true;
+    }
+  }
+
+  Future<void> _initDisplayMonitoring() async {
+    // Set up display change listeners
+    SubScreenPlugin.setOnMultiDisplayListener(OnMultiDisplayListener(
+      onDisplayAdded: (Display display) {
+        if (!display.isDefault) {
+          setState(() {
+            _secondaryDisplayId = display.id;
+          });
+          // Auto-show keyboard if settings allow
+          final settings = ref.read(appSettingsProvider);
+          if (settings.initialKeyboardVisible) {
+            ref.read(keyboardVisibleProvider.notifier).state = true;
+          }
+        }
+      },
+      onDisplayChanged: (Display display) {
+        // Handle display changes if needed
+      },
+      onDisplayRemoved: (int displayId) {
+        if (displayId == _secondaryDisplayId) {
+          setState(() {
+            _secondaryDisplayId = null;
+          });
+          ref.read(keyboardVisibleProvider.notifier).state = false;
+        }
+      },
+    ));
+
+    // Check for existing secondary displays
+    final displays = await SubScreenPlugin.getDisplays();
+    for (var display in displays) {
+      if (!display.isDefault) {
+        setState(() {
+          _secondaryDisplayId = display.id;
+        });
+        break;
+      }
     }
   }
 
@@ -98,71 +135,17 @@ class _TeleDeckAppState extends ConsumerState<TeleDeckApp> {
   }
 
   void _showKeyboard() {
-    if (_secondaryDisplay == null) return;
-
-    final displayId = _secondaryDisplay!.displayId;
-    if (displayId == null) return;
-
-    if (!_secondaryLaunched) {
-      _displayManager?.showSecondaryDisplay(
-        displayId: displayId,
-        routerName: 'keyboard',
-      );
-      _secondaryLaunched = true;
-    }
+    if (_secondaryDisplayId == null) return;
 
     ref.read(keyboardVisibleProvider.notifier).state = true;
     ref.read(appSettingsProvider.notifier).saveVisibilityState(true);
   }
 
   void _hideKeyboard() {
-    if (_secondaryDisplay == null) return;
-
-    final displayId = _secondaryDisplay!.displayId;
-    if (displayId == null) return;
-
-    if (_secondaryLaunched) {
-      _displayManager?.hideSecondaryDisplay(displayId: displayId);
-      _secondaryLaunched = false;
-    }
+    if (_secondaryDisplayId == null) return;
 
     ref.read(keyboardVisibleProvider.notifier).state = false;
     ref.read(appSettingsProvider.notifier).saveVisibilityState(false);
-  }
-
-  Future<void> _initDisplayManager() async {
-    _displayManager = DisplayManager();
-
-    // Get available displays
-    final displays = await _displayManager?.getDisplays();
-
-    // Store secondary display reference
-    if (displays != null && displays.length > 1) {
-      _secondaryDisplay = displays[1];
-    }
-
-    // Listen for display changes (e.g., device folding/unfolding)
-    _displaySubscription =
-        _displayManager?.connectedDisplaysChangedStream?.listen((status) async {
-      if (status == 1) {
-        // New display connected
-        final updatedDisplays = await _displayManager?.getDisplays();
-        if (updatedDisplays != null && updatedDisplays.length > 1) {
-          _secondaryDisplay = updatedDisplays[1];
-
-          // Auto-show if settings allow
-          final settings = ref.read(appSettingsProvider);
-          if (settings.initialKeyboardVisible) {
-            _showKeyboard();
-          }
-        }
-      } else if (status == 0) {
-        // Display disconnected
-        _secondaryDisplay = null;
-        _secondaryLaunched = false;
-        ref.read(keyboardVisibleProvider.notifier).state = false;
-      }
-    });
   }
 
   @override
@@ -190,11 +173,5 @@ class _TeleDeckAppState extends ConsumerState<TeleDeckApp> {
         '/settings': (context) => const SettingsView(),
       },
     );
-  }
-
-  @override
-  void dispose() {
-    _displaySubscription?.cancel();
-    super.dispose();
   }
 }

@@ -264,14 +264,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.8"
-  presentation_displays:
-    dependency: "direct main"
-    description:
-      name: presentation_displays
-      sha256: "4338251d3ab9f7c8c040481e8e987a81aa7accd87bf1f75d7042a268f907742b"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.0.0"
   riverpod:
     dependency: transitive
     description:
@@ -381,6 +373,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.4.1"
+  sub_screen:
+    dependency: "direct main"
+    description:
+      name: sub_screen
+      sha256: a3d4cea7ad845a8825d990b2c66a0d8f5ea07dbd84e7c0fe32e080e17730e926
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.1.9"
   term_glyph:
     dependency: transitive
     description:

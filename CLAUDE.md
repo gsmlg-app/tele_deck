@@ -51,11 +51,12 @@ Communication flow: BroadcastReceiver → MethodChannel → Flutter provider sta
 
 ### Multi-Display Management
 
-Uses `presentation_displays` package:
-- `DisplayManager.getDisplays()` to detect secondary displays
-- `showSecondaryDisplay(displayId, routerName)` to launch keyboard on secondary screen
-- `hideSecondaryDisplay(displayId)` to hide keyboard
-- `SecondaryDisplay` widget wraps keyboard UI to receive data from main screen
+Uses `sub_screen` package (Android Presentation API):
+- `SubScreenPlugin.getDisplays()` to detect secondary displays
+- `OnMultiDisplayListener` for display connect/disconnect events
+- `MultiDisplayFlutterActivity` in Android handles secondary screen launch
+- `@pragma('vm:entry-point') void keyboardEntry()` is the secondary screen entry point
+- Secondary screen auto-launches when display is connected
 
 ### State Management
 
