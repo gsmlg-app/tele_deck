@@ -1,6 +1,6 @@
 # TeleDeck
 
-A dual-screen custom keyboard application for Android handheld devices with secondary displays (Surface Duo, Ayaneo Flip DS, etc.).
+A dual-screen custom keyboard application for Android handheld devices with secondary displays (Ayaneo Pocket DS, etc.).
 
 ## Overview
 
