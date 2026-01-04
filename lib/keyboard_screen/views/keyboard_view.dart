@@ -265,68 +265,111 @@ class KeyboardView extends ConsumerWidget {
     );
   }
 
-  void _showKeyboardModeSelector(BuildContext context, WidgetRef ref) {
-    final currentMode = ref.read(keyboardModeProvider);
+  void _showKeyboardModeSelector(WidgetRef ref) {
+    // Toggle the inline mode selector overlay
+    ref.read(showModeSelectorProvider.notifier).state = true;
+  }
 
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Color(TeleDeckColors.secondaryBackground),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (context) => Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'KEYBOARD MODE',
-              style: GoogleFonts.robotoMono(
-                color: Color(TeleDeckColors.neonCyan),
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 2,
+  /// Build the inline mode selector overlay (replaces bottom sheet)
+  Widget _buildModeSelectorOverlay(WidgetRef ref) {
+    final currentMode = ref.watch(keyboardModeProvider);
+
+    return Container(
+      color: Color(TeleDeckColors.darkBackground).withValues(alpha: 0.95),
+      child: Center(
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          margin: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Color(TeleDeckColors.secondaryBackground),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: Color(TeleDeckColors.neonCyan).withValues(alpha: 0.5),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Color(TeleDeckColors.neonCyan).withValues(alpha: 0.2),
+                blurRadius: 20,
+                spreadRadius: 2,
               ),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _buildModeButton(
-                  context,
-                  ref,
-                  icon: Icons.keyboard,
-                  label: 'Standard',
-                  mode: KeyboardMode.standard,
-                  isSelected: currentMode == KeyboardMode.standard,
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'KEYBOARD MODE',
+                style: GoogleFonts.robotoMono(
+                  color: Color(TeleDeckColors.neonCyan),
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 2,
                 ),
-                _buildModeButton(
-                  context,
-                  ref,
-                  icon: Icons.dialpad,
-                  label: 'Numpad',
-                  mode: KeyboardMode.numpad,
-                  isSelected: currentMode == KeyboardMode.numpad,
+              ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildModeButtonInline(
+                    ref,
+                    icon: Icons.keyboard,
+                    label: 'Standard',
+                    mode: KeyboardMode.standard,
+                    isSelected: currentMode == KeyboardMode.standard,
+                  ),
+                  const SizedBox(width: 16),
+                  _buildModeButtonInline(
+                    ref,
+                    icon: Icons.dialpad,
+                    label: 'Numpad',
+                    mode: KeyboardMode.numpad,
+                    isSelected: currentMode == KeyboardMode.numpad,
+                  ),
+                  const SizedBox(width: 16),
+                  _buildModeButtonInline(
+                    ref,
+                    icon: Icons.emoji_emotions,
+                    label: 'Emoji',
+                    mode: KeyboardMode.emoji,
+                    isSelected: currentMode == KeyboardMode.emoji,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              // Close button
+              GestureDetector(
+                onTap: () {
+                  ref.read(showModeSelectorProvider.notifier).state = false;
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                      color: Color(TeleDeckColors.neonMagenta),
+                      width: 1,
+                    ),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    'CLOSE',
+                    style: GoogleFonts.robotoMono(
+                      color: Color(TeleDeckColors.neonMagenta),
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 2,
+                    ),
+                  ),
                 ),
-                _buildModeButton(
-                  context,
-                  ref,
-                  icon: Icons.emoji_emotions,
-                  label: 'Emoji',
-                  mode: KeyboardMode.emoji,
-                  isSelected: currentMode == KeyboardMode.emoji,
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-          ],
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildModeButton(
-    BuildContext context,
+  Widget _buildModeButtonInline(
     WidgetRef ref, {
     required IconData icon,
     required String label,
@@ -336,21 +379,30 @@ class KeyboardView extends ConsumerWidget {
     return GestureDetector(
       onTap: () {
         ref.read(keyboardModeProvider.notifier).state = mode;
-        Navigator.pop(context);
+        ref.read(showModeSelectorProvider.notifier).state = false;
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         decoration: BoxDecoration(
           color: isSelected
               ? Color(TeleDeckColors.neonCyan).withValues(alpha: 0.2)
               : Color(TeleDeckColors.keySurface),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected
                 ? Color(TeleDeckColors.neonCyan)
                 : Color(TeleDeckColors.neonCyan).withValues(alpha: 0.3),
             width: isSelected ? 2 : 1,
           ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: Color(TeleDeckColors.neonCyan).withValues(alpha: 0.3),
+                    blurRadius: 8,
+                    spreadRadius: 1,
+                  ),
+                ]
+              : null,
         ),
         child: Column(
           children: [
@@ -359,16 +411,16 @@ class KeyboardView extends ConsumerWidget {
               color: isSelected
                   ? Color(TeleDeckColors.neonCyan)
                   : Color(TeleDeckColors.textPrimary),
-              size: 28,
+              size: 32,
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 8),
             Text(
               label,
               style: GoogleFonts.robotoMono(
                 color: isSelected
                     ? Color(TeleDeckColors.neonCyan)
                     : Color(TeleDeckColors.textPrimary),
-                fontSize: 11,
+                fontSize: 12,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
               ),
             ),
@@ -463,17 +515,31 @@ class KeyboardView extends ConsumerWidget {
   Widget _buildKeyboard(BuildContext context, WidgetRef ref) {
     final service = ref.watch(keyboardServiceProvider);
     final keyboardMode = ref.watch(keyboardModeProvider);
+    final showModeSelector = ref.watch(showModeSelectorProvider);
 
     // Build different layouts based on mode
+    Widget keyboardContent;
     switch (keyboardMode) {
       case KeyboardMode.numpad:
-        return _buildNumpadLayout(context, ref, service);
+        keyboardContent = _buildNumpadLayout(context, ref, service);
       case KeyboardMode.emoji:
-        return _buildEmojiLayout(context, ref, service);
+        keyboardContent = _buildEmojiLayout(context, ref, service);
       case KeyboardMode.standard:
       default:
-        return _buildStandardLayout(context, ref, service);
+        keyboardContent = _buildStandardLayout(context, ref, service);
     }
+
+    // Stack the keyboard with the mode selector overlay
+    return Stack(
+      children: [
+        keyboardContent,
+        // Mode selector overlay (shown on top when triggered)
+        if (showModeSelector)
+          Positioned.fill(
+            child: _buildModeSelectorOverlay(ref),
+          ),
+      ],
+    );
   }
 
   /// Standard QWERTY keyboard layout
@@ -1064,7 +1130,7 @@ class KeyboardView extends ConsumerWidget {
                 final newState = !isFnEnabled;
                 ref.read(fnEnabledProvider.notifier).state = newState;
               },
-              onLongPress: () => _showKeyboardModeSelector(context, ref),
+              onLongPress: () => _showKeyboardModeSelector(ref),
               flex: KeyboardLayout.keyFlex['FN'] ?? 1.0,
             );
           case 'SPACE':

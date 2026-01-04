@@ -136,3 +136,6 @@ enum KeyboardMode { standard, numpad, emoji }
 
 /// Provider for keyboard layout mode
 final keyboardModeProvider = StateProvider<KeyboardMode>((ref) => KeyboardMode.standard);
+
+/// Provider for showing mode selector overlay
+final showModeSelectorProvider = StateProvider<bool>((ref) => false);
