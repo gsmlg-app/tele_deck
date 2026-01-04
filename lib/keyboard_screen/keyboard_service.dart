@@ -1,113 +1,154 @@
-import 'dart:isolate';
-import 'dart:ui';
-
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../shared/constants.dart';
-import '../shared/protocol.dart';
+import '../main.dart';
 
-/// Service for sending keyboard events via IPC
+/// Arrow key directions
+enum ArrowDirection { up, down, left, right }
+
+/// Modifier key types
+enum ModifierType { ctrl, alt, super_ }
+
+/// Service for sending keyboard events to the IME Service via MethodChannel
 class KeyboardService {
-  SendPort? _sendPort;
+  final MethodChannel _channel = imeChannel;
   bool _isConnected = false;
 
-  KeyboardService() {
-    _connect();
+  KeyboardService();
+
+  /// Check if connected to input field
+  bool get isConnected => _isConnected;
+
+  /// Update connection status (called from main.dart)
+  void setConnected(bool connected) {
+    _isConnected = connected;
   }
 
-  /// Attempt to connect to the main screen's receive port
-  void _connect() {
-    _sendPort = IsolateNameServer.lookupPortByName(kIpcPortName);
-    _isConnected = _sendPort != null;
-  }
-
-  /// Check if connected, attempt reconnect if not
-  bool get isConnected {
-    if (!_isConnected) {
-      _connect();
-    }
-    return _isConnected;
-  }
-
-  /// Send a keyboard event to the main screen
-  bool sendEvent(KeyboardEvent event) {
-    if (!isConnected) {
-      return false;
-    }
-
+  /// Send text to the current input field
+  Future<bool> sendKeyDown(String char) async {
     try {
-      _sendPort!.send(event.toMap());
+      await _channel.invokeMethod('commitText', {'text': char});
       return true;
     } catch (e) {
-      _isConnected = false;
       return false;
     }
-  }
-
-  /// Send a character key down event
-  bool sendKeyDown(String char) {
-    return sendEvent(KeyDown(char));
   }
 
   /// Send backspace event
-  bool sendBackspace() {
-    return sendEvent(const Backspace());
+  Future<bool> sendBackspace() async {
+    try {
+      await _channel.invokeMethod('backspace');
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
 
   /// Send enter event
-  bool sendEnter() {
-    return sendEvent(const Enter());
+  Future<bool> sendEnter() async {
+    try {
+      await _channel.invokeMethod('enter');
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
 
   /// Send space event
-  bool sendSpace() {
-    return sendEvent(const Space());
+  Future<bool> sendSpace() async {
+    return sendKeyDown(' ');
   }
 
-  /// Send clear event
-  bool sendClear() {
-    return sendEvent(const Clear());
+  /// Send clear event (select all + delete)
+  Future<bool> sendClear() async {
+    // TODO: Implement select all + delete via key events
+    return true;
   }
 
   /// Send tab event
-  bool sendTab() {
-    return sendEvent(const Tab());
+  Future<bool> sendTab() async {
+    try {
+      await _channel.invokeMethod('tab');
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
 
   /// Send escape event
-  bool sendEscape() {
-    return sendEvent(const Escape());
+  Future<bool> sendEscape() async {
+    try {
+      await _channel.invokeMethod('sendKeyEvent', {
+        'keyCode': 111, // KEYCODE_ESCAPE
+        'metaState': 0,
+      });
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
 
   /// Send delete (forward) event
-  bool sendDelete() {
-    return sendEvent(const Delete());
+  Future<bool> sendDelete() async {
+    try {
+      await _channel.invokeMethod('delete');
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
 
   /// Send function key event (F1-F12)
-  bool sendFunctionKey(int number) {
-    return sendEvent(FunctionKey(number));
+  Future<bool> sendFunctionKey(int number) async {
+    try {
+      // F1 = KEYCODE_F1 (131), F2 = 132, etc.
+      final keyCode = 130 + number;
+      await _channel.invokeMethod('sendKeyEvent', {
+        'keyCode': keyCode,
+        'metaState': 0,
+      });
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
 
   /// Send arrow key event
-  bool sendArrowKey(ArrowDirection direction) {
-    return sendEvent(ArrowKey(direction));
+  Future<bool> sendArrowKey(ArrowDirection direction) async {
+    try {
+      await _channel.invokeMethod('moveCursor', {
+        'direction': direction.name,
+      });
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
 
   /// Send modifier key event
-  bool sendModifier(ModifierType modifier, {required bool pressed}) {
-    return sendEvent(Modifier(modifier, pressed: pressed));
+  Future<bool> sendModifier(ModifierType modifier, {required bool pressed}) async {
+    // Modifier state is tracked locally for now
+    // The native side will need to handle modifier combinations
+    return true;
   }
 
   /// Send caps lock event
-  bool sendCapsLock(bool enabled) {
-    return sendEvent(CapsLock(enabled));
+  Future<bool> sendCapsLock(bool enabled) async {
+    // Caps lock state is tracked locally
+    return true;
   }
 }
 
 /// Provider for keyboard service
 final keyboardServiceProvider = Provider<KeyboardService>((ref) {
-  return KeyboardService();
+  final service = KeyboardService();
+
+  // Listen for connection status changes
+  ref.listen(imeConnectionProvider, (previous, next) {
+    service.setConnected(next);
+  });
+
+  return service;
 });
 
 /// Provider for shift state

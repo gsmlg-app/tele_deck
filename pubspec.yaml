@@ -1,5 +1,5 @@
 name: tele_deck
-description: "TeleDeck - Dual-Screen Custom Keyboard for handheld devices"
+description: "TeleDeck - System IME Keyboard with Secondary Display Support"
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -33,9 +33,6 @@ dependencies:
 
   # State Management
   flutter_riverpod: ^2.6.1
-
-  # Multi-screen presentation displays
-  sub_screen: ^0.1.9
 
   # Google Fonts for monospace font
   google_fonts: ^6.2.1

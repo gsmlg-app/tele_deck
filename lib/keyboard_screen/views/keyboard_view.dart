@@ -6,7 +6,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../shared/constants.dart';
-import '../../shared/protocol.dart';
 import '../keyboard_service.dart';
 import 'keyboard_key.dart';
 

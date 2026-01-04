@@ -1,25 +1,87 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../shared/constants.dart';
 import '../settings_provider.dart';
 
-/// Settings screen UI
-class SettingsView extends ConsumerWidget {
+/// MethodChannel for IME settings operations
+const _settingsChannel = MethodChannel('app.gsmlg.tele_deck/settings');
+
+/// Provider for IME enabled status
+final imeEnabledProvider = StateProvider<bool>((ref) => false);
+
+/// Provider for IME selected status
+final imeSelectedProvider = StateProvider<bool>((ref) => false);
+
+/// Settings screen UI - IME Setup and Configuration
+class SettingsView extends ConsumerStatefulWidget {
   const SettingsView({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SettingsView> createState() => _SettingsViewState();
+}
+
+class _SettingsViewState extends ConsumerState<SettingsView> {
+  @override
+  void initState() {
+    super.initState();
+    _setupChannelListener();
+    _checkIMEStatus();
+  }
+
+  void _setupChannelListener() {
+    _settingsChannel.setMethodCallHandler((call) async {
+      if (call.method == 'onIMEStatusChanged') {
+        final enabled = call.arguments['enabled'] as bool? ?? false;
+        final selected = call.arguments['selected'] as bool? ?? false;
+        ref.read(imeEnabledProvider.notifier).state = enabled;
+        ref.read(imeSelectedProvider.notifier).state = selected;
+      }
+    });
+  }
+
+  Future<void> _checkIMEStatus() async {
+    try {
+      final status = await _settingsChannel.invokeMethod('getIMEStatus');
+      if (status is Map) {
+        ref.read(imeEnabledProvider.notifier).state = status['enabled'] ?? false;
+        ref.read(imeSelectedProvider.notifier).state = status['selected'] ?? false;
+      }
+    } catch (e) {
+      debugPrint('Error checking IME status: $e');
+    }
+  }
+
+  Future<void> _openIMESettings() async {
+    try {
+      await _settingsChannel.invokeMethod('openIMESettings');
+    } catch (e) {
+      debugPrint('Error opening IME settings: $e');
+    }
+  }
+
+  Future<void> _openIMEPicker() async {
+    try {
+      await _settingsChannel.invokeMethod('openIMEPicker');
+    } catch (e) {
+      debugPrint('Error opening IME picker: $e');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final settings = ref.watch(appSettingsProvider);
-    final isKeyboardVisible = ref.watch(keyboardVisibleProvider);
+    final isIMEEnabled = ref.watch(imeEnabledProvider);
+    final isIMESelected = ref.watch(imeSelectedProvider);
 
     return Scaffold(
       backgroundColor: Color(TeleDeckColors.darkBackground),
       appBar: AppBar(
         backgroundColor: Color(TeleDeckColors.secondaryBackground),
         title: Text(
-          'SETTINGS',
+          'TELEDECK SETTINGS',
           style: GoogleFonts.robotoMono(
             fontSize: 18,
             fontWeight: FontWeight.bold,
@@ -34,56 +96,51 @@ class SettingsView extends ConsumerWidget {
           ),
           onPressed: () => Navigator.of(context).pop(),
         ),
+        actions: [
+          IconButton(
+            icon: Icon(
+              Icons.refresh,
+              color: Color(TeleDeckColors.neonCyan),
+            ),
+            onPressed: _checkIMEStatus,
+          ),
+        ],
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // Keyboard Visibility Section
-          _buildSectionHeader('KEYBOARD'),
-          _buildSettingsTile(
-            title: 'Keyboard Visible',
-            subtitle: 'Current keyboard visibility state',
-            trailing: Switch(
-              value: isKeyboardVisible,
-              onChanged: (value) {
-                ref.read(keyboardVisibleProvider.notifier).state = value;
-              },
-              activeTrackColor: Color(TeleDeckColors.neonCyan).withValues(alpha: 0.5),
-              activeThumbColor: Color(TeleDeckColors.neonCyan),
-            ),
-          ),
-          const SizedBox(height: 24),
+          // IME Setup Section
+          _buildSectionHeader('IME SETUP'),
+          _buildIMEStatusCard(isIMEEnabled, isIMESelected),
+          const SizedBox(height: 16),
 
-          // Startup Behavior Section
-          _buildSectionHeader('STARTUP BEHAVIOR'),
-          _buildSettingsTile(
-            title: 'Show Keyboard on Startup',
-            subtitle: 'Automatically show keyboard when app launches',
-            trailing: Switch(
-              value: settings.showKeyboardOnStartup,
-              onChanged: (value) {
-                ref
-                    .read(appSettingsProvider.notifier)
-                    .setShowKeyboardOnStartup(value);
-              },
-              activeTrackColor: Color(TeleDeckColors.neonCyan).withValues(alpha: 0.5),
-              activeThumbColor: Color(TeleDeckColors.neonCyan),
+          // Setup Buttons
+          if (!isIMEEnabled)
+            _buildActionButton(
+              title: 'Enable TeleDeck Keyboard',
+              subtitle: 'Open system settings to enable this keyboard',
+              icon: Icons.settings,
+              onTap: _openIMESettings,
+              isHighlighted: true,
             ),
-          ),
-          _buildSettingsTile(
-            title: 'Remember Last State',
-            subtitle: 'Restore keyboard visibility from previous session',
-            trailing: Switch(
-              value: settings.rememberLastState,
-              onChanged: (value) {
-                ref
-                    .read(appSettingsProvider.notifier)
-                    .setRememberLastState(value);
-              },
-              activeTrackColor: Color(TeleDeckColors.neonCyan).withValues(alpha: 0.5),
-              activeThumbColor: Color(TeleDeckColors.neonCyan),
+
+          if (isIMEEnabled && !isIMESelected)
+            _buildActionButton(
+              title: 'Select TeleDeck Keyboard',
+              subtitle: 'Choose TeleDeck as your input method',
+              icon: Icons.keyboard,
+              onTap: _openIMEPicker,
+              isHighlighted: true,
             ),
-          ),
+
+          if (isIMEEnabled)
+            _buildActionButton(
+              title: 'Switch Input Method',
+              subtitle: 'Change to a different keyboard',
+              icon: Icons.swap_horiz,
+              onTap: _openIMEPicker,
+            ),
+
           const SizedBox(height: 24),
 
           // Display Section
@@ -101,7 +158,6 @@ class SettingsView extends ConsumerWidget {
                   ),
                   onPressed: () {
                     final newRotation = (settings.keyboardRotation - 1 + 4) % 4;
-                    debugPrint('Setting rotation to: $newRotation');
                     ref
                         .read(appSettingsProvider.notifier)
                         .setKeyboardRotation(newRotation);
@@ -114,7 +170,6 @@ class SettingsView extends ConsumerWidget {
                   ),
                   onPressed: () {
                     final newRotation = (settings.keyboardRotation + 1) % 4;
-                    debugPrint('Setting rotation to: $newRotation');
                     ref
                         .read(appSettingsProvider.notifier)
                         .setKeyboardRotation(newRotation);
@@ -159,10 +214,151 @@ class SettingsView extends ConsumerWidget {
           _buildSectionHeader('ABOUT'),
           _buildInfoTile(
             title: 'TeleDeck',
-            subtitle: 'Dual-Screen Custom Keyboard v1.0.0',
+            subtitle: 'System IME Keyboard v1.0.0',
             icon: Icons.info_outline,
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildIMEStatusCard(bool isEnabled, bool isSelected) {
+    final status = isSelected
+        ? 'Active'
+        : isEnabled
+            ? 'Enabled (not selected)'
+            : 'Not Enabled';
+    final statusColor = isSelected
+        ? Colors.green
+        : isEnabled
+            ? Colors.orange
+            : Colors.red;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Color(TeleDeckColors.secondaryBackground),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: statusColor.withValues(alpha: 0.5),
+          width: 2,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: statusColor.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              isSelected
+                  ? Icons.check_circle
+                  : isEnabled
+                      ? Icons.warning
+                      : Icons.error,
+              color: statusColor,
+              size: 32,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'TeleDeck Keyboard',
+                  style: GoogleFonts.robotoMono(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Color(TeleDeckColors.textPrimary),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  status,
+                  style: GoogleFonts.robotoMono(
+                    fontSize: 14,
+                    color: statusColor,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButton({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required VoidCallback onTap,
+    bool isHighlighted = false,
+  }) {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      child: Material(
+        color: isHighlighted
+            ? Color(TeleDeckColors.neonCyan).withValues(alpha: 0.15)
+            : Color(TeleDeckColors.secondaryBackground),
+        borderRadius: BorderRadius.circular(8),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(8),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: isHighlighted
+                    ? Color(TeleDeckColors.neonCyan)
+                    : Color(TeleDeckColors.neonCyan).withValues(alpha: 0.2),
+                width: isHighlighted ? 2 : 1,
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  icon,
+                  color: Color(TeleDeckColors.neonCyan),
+                  size: 24,
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: GoogleFonts.robotoMono(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Color(TeleDeckColors.textPrimary),
+                        ),
+                      ),
+                      Text(
+                        subtitle,
+                        style: GoogleFonts.robotoMono(
+                          fontSize: 11,
+                          color: Color(TeleDeckColors.textPrimary).withValues(alpha: 0.6),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.arrow_forward_ios,
+                  color: Color(TeleDeckColors.neonCyan).withValues(alpha: 0.5),
+                  size: 16,
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

@@ -67,12 +67,5 @@ final appSettingsProvider =
   return SettingsNotifier(service);
 });
 
-/// Provider for keyboard visibility state
-/// This is the main toggle state that controls whether keyboard is shown
-final keyboardVisibleProvider = StateProvider<bool>((ref) {
-  final settings = ref.watch(appSettingsProvider);
-  return settings.initialKeyboardVisible;
-});
-
 /// Provider to check if settings have been initialized
 final settingsInitializedProvider = StateProvider<bool>((ref) => false);
