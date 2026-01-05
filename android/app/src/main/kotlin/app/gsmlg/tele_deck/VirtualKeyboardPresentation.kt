@@ -22,7 +22,7 @@ class VirtualKeyboardPresentation(
     context: Context,
     display: Display,
     private val sharedFlutterEngine: FlutterEngine,
-    private val onViewReady: (() -> Unit)? = null
+    private val onEngineReady: ((FlutterEngine) -> Unit)? = null
 ) : Presentation(context, display) {
 
     companion object {
@@ -31,6 +31,12 @@ class VirtualKeyboardPresentation(
         private var localFlutterEngine: FlutterEngine? = null
         private var isDartEntrypointExecuted: Boolean = false
     }
+
+    /**
+     * Get the local FlutterEngine used by this Presentation.
+     * This can be used to set up MethodChannels for communication.
+     */
+    fun getLocalEngine(): FlutterEngine? = localFlutterEngine
 
     private var flutterView: FlutterView? = null
 
@@ -136,8 +142,8 @@ class VirtualKeyboardPresentation(
 
                     Log.d(TAG, "FlutterView attached to local FlutterEngine")
 
-                    // Notify that view is ready
-                    onViewReady?.invoke()
+                    // Notify that engine is ready - caller can set up MethodChannels
+                    onEngineReady?.invoke(engine)
 
                     // Notify Flutter lifecycle that app is resumed to trigger rendering
                     engine.lifecycleChannel.appIsResumed()

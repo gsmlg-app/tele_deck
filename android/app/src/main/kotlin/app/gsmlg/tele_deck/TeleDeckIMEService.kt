@@ -110,17 +110,25 @@ class TeleDeckIMEService : InputMethodService() {
         isDartEntrypointExecuted = true
     }
 
-    private fun setupMethodChannel() {
-        flutterEngine?.let { engine ->
-            methodChannel = MethodChannel(engine.dartExecutor.binaryMessenger, CHANNEL_NAME)
-            methodChannel?.setMethodCallHandler { call, result ->
+    /**
+     * Set up MethodChannel on a FlutterEngine.
+     * This is called for both the primary engine and the Presentation's local engine.
+     */
+    private fun setupMethodChannelOnEngine(engine: FlutterEngine) {
+        Log.d(TAG, "Setting up MethodChannel on engine: ${engine.hashCode()}")
+        val channel = MethodChannel(engine.dartExecutor.binaryMessenger, CHANNEL_NAME)
+        channel.setMethodCallHandler { call, result ->
+                Log.d(TAG, "MethodChannel received: ${call.method}")
                 when (call.method) {
                     "commitText" -> {
-                        val text = call.argument<String>("text") ?: ""
+                        // Flutter sends text directly as arguments, not as a map
+                        val text = call.arguments as? String ?: ""
+                        Log.d(TAG, "MethodChannel commitText: '$text'")
                         commitText(text)
                         result.success(true)
                     }
                     "backspace" -> {
+                        Log.d(TAG, "MethodChannel backspace")
                         deleteBackward()
                         result.success(true)
                     }
@@ -137,13 +145,30 @@ class TeleDeckIMEService : InputMethodService() {
                         result.success(true)
                     }
                     "moveCursor" -> {
-                        val direction = call.argument<String>("direction") ?: ""
-                        moveCursor(direction)
+                        // Flutter sends offset as int directly
+                        val offset = call.arguments as? Int ?: 0
+                        Log.d(TAG, "MethodChannel moveCursor: $offset")
+                        moveCursorByOffset(offset)
                         result.success(true)
                     }
                     "sendKeyEvent" -> {
-                        val keyCode = call.argument<Int>("keyCode") ?: 0
-                        val metaState = call.argument<Int>("metaState") ?: 0
+                        // Flutter sends a map with keyCode and modifier booleans
+                        @Suppress("UNCHECKED_CAST")
+                        val args = call.arguments as? Map<String, Any?> ?: emptyMap()
+                        val keyCode = (args["keyCode"] as? Int) ?: 0
+                        val shift = (args["shift"] as? Boolean) ?: false
+                        val ctrl = (args["ctrl"] as? Boolean) ?: false
+                        val alt = (args["alt"] as? Boolean) ?: false
+                        val meta = (args["meta"] as? Boolean) ?: false
+
+                        // Build metaState from modifier flags
+                        var metaState = 0
+                        if (shift) metaState = metaState or android.view.KeyEvent.META_SHIFT_ON
+                        if (ctrl) metaState = metaState or android.view.KeyEvent.META_CTRL_ON
+                        if (alt) metaState = metaState or android.view.KeyEvent.META_ALT_ON
+                        if (meta) metaState = metaState or android.view.KeyEvent.META_META_ON
+
+                        Log.d(TAG, "MethodChannel sendKeyEvent: keyCode=$keyCode, metaState=$metaState")
                         sendKeyEventToApp(keyCode, metaState)
                         result.success(true)
                     }
@@ -161,14 +186,23 @@ class TeleDeckIMEService : InputMethodService() {
                     }
                 }
             }
+        // Keep reference to the channel for sending notifications back to Flutter
+        methodChannel = channel
+    }
+
+    private fun setupMethodChannel() {
+        flutterEngine?.let { engine ->
+            setupMethodChannelOnEngine(engine)
         }
     }
 
     private fun commitText(text: String) {
+        Log.d(TAG, "commitText: '$text', hasConnection: ${currentInputConnection != null}")
         currentInputConnection?.commitText(text, 1)
     }
 
     private fun deleteBackward() {
+        Log.d(TAG, "deleteBackward, hasConnection: ${currentInputConnection != null}")
         currentInputConnection?.deleteSurroundingText(1, 0)
     }
 
@@ -196,13 +230,13 @@ class TeleDeckIMEService : InputMethodService() {
         currentInputConnection?.commitText("\t", 1)
     }
 
-    private fun moveCursor(direction: String) {
+    private fun moveCursorByOffset(offset: Int) {
         currentInputConnection?.let { ic ->
-            when (direction) {
-                "left" -> ic.sendKeyEvent(android.view.KeyEvent(android.view.KeyEvent.ACTION_DOWN, android.view.KeyEvent.KEYCODE_DPAD_LEFT))
-                "right" -> ic.sendKeyEvent(android.view.KeyEvent(android.view.KeyEvent.ACTION_DOWN, android.view.KeyEvent.KEYCODE_DPAD_RIGHT))
-                "up" -> ic.sendKeyEvent(android.view.KeyEvent(android.view.KeyEvent.ACTION_DOWN, android.view.KeyEvent.KEYCODE_DPAD_UP))
-                "down" -> ic.sendKeyEvent(android.view.KeyEvent(android.view.KeyEvent.ACTION_DOWN, android.view.KeyEvent.KEYCODE_DPAD_DOWN))
+            // Get current cursor position and move by offset
+            val extracted = ic.getExtractedText(android.view.inputmethod.ExtractedTextRequest(), 0)
+            if (extracted != null) {
+                val newPos = (extracted.selectionStart + offset).coerceIn(0, extracted.text?.length ?: 0)
+                ic.setSelection(newPos, newPos)
             }
         }
     }
@@ -573,7 +607,12 @@ class TeleDeckIMEService : InputMethodService() {
                 presentationContext,
                 display,
                 engine,
-                onViewReady = { executeDartEntrypointIfNeeded() }
+                onEngineReady = { localEngine ->
+                    // Set up MethodChannel on the Presentation's local engine
+                    // This allows the Flutter keyboard UI to communicate with the IME service
+                    Log.d(TAG, "Presentation engine ready, setting up MethodChannel")
+                    setupMethodChannelOnEngine(localEngine)
+                }
             ).apply {
                 Log.d(TAG, "Calling presentation.show()")
                 show()
