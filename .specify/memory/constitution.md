@@ -1,15 +1,15 @@
 <!--
   Sync Impact Report
   ==================
-  Version change: 1.0.0 → 1.1.0
+  Version change: 1.1.0 → 1.2.0
 
   Modified principles:
-  - Platform Requirements: Updated state management from Riverpod to BLoC
-  - Platform Requirements: Added Melos monorepo architecture
+  - Platform Requirements: Upgraded flutter_bloc from v8.x to v9.x
+  - Platform Requirements: Added form_bloc + flutter_form_bloc for forms
+  - Package Structure: Added third_party/ directory
 
   Added sections:
-  - Monorepo Architecture (new principle VI)
-  - Package structure details
+  - third_party packages (form_bloc, flutter_form_bloc)
 
   Removed sections: None
 
@@ -104,7 +104,8 @@ TeleDeck MUST maintain a Melos-managed monorepo structure with clear package bou
 
 **Technology Stack**:
 - Framework: Flutter 3.x / Dart 3.8+
-- State Management: flutter_bloc v8.x (BLoC pattern)
+- State Management: flutter_bloc v9.x (BLoC pattern)
+- Forms: form_bloc + flutter_form_bloc
 - Workspace: Melos for monorepo management
 - Native: Kotlin (InputMethodService, Presentation API)
 - Persistence: shared_preferences (cross-engine compatible)
@@ -130,6 +131,9 @@ tele_deck/
 │   ├── keyboard_widgets/   # KeyboardView, KeyboardKey, layouts
 │   ├── settings_widgets/   # SettingsView, SetupGuideView
 │   └── common_widgets/     # CrashLogViewer, shared widgets
+├── third_party/            # Third-party packages (forked)
+│   ├── form_bloc/          # Form state management
+│   └── flutter_form_bloc/  # Flutter form widgets
 └── android/                # Native Kotlin code
 ```
 
@@ -177,4 +181,4 @@ This Constitution supersedes all other practices for TeleDeck development.
 - All PRs MUST be reviewed against applicable principles
 - Violations require explicit justification in Complexity Tracking (see plan-template.md)
 
-**Version**: 1.1.0 | **Ratified**: 2025-01-05 | **Last Amended**: 2025-01-05
+**Version**: 1.2.0 | **Ratified**: 2025-01-05 | **Last Amended**: 2025-01-05

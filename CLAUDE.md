@@ -29,6 +29,9 @@ tele_deck/
 │   ├── keyboard_widgets/             # Keyboard view with all layouts
 │   ├── settings_widgets/             # Settings and setup guide UI
 │   └── common_widgets/               # Shared widgets (crash log viewer)
+├── third_party/                      # Third-party packages (forked/modified)
+│   ├── form_bloc/                    # Form state management with BLoC
+│   └── flutter_form_bloc/            # Flutter widgets for form_bloc
 ├── android/                          # Native Android code
 │   └── app/src/main/kotlin/.../      # TeleDeckIMEService, crash handler
 └── melos.yaml                        # Workspace configuration
@@ -243,7 +246,8 @@ textSecondary      = 0xFFA0A0A0   // Secondary text
 ## Active Technologies
 
 - Dart 3.8+ / Kotlin (Android) + Flutter 3.x
-- flutter_bloc v8.x for state management
+- flutter_bloc v9.x for state management
+- form_bloc + flutter_form_bloc for form handling
 - Melos for monorepo management
 - shared_preferences for settings persistence
 - File-based crash logs (7-day retention)

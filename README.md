@@ -93,6 +93,9 @@ tele_deck/
 │   ├── keyboard_widgets/   # Keyboard UI
 │   ├── settings_widgets/   # Settings UI
 │   └── common_widgets/     # Shared widgets
+├── third_party/            # Third-party packages
+│   ├── form_bloc/          # Form state management
+│   └── flutter_form_bloc/  # Flutter form widgets
 └── android/                # Native code
 ```
 
@@ -105,7 +108,8 @@ tele_deck/
 ## Tech Stack
 
 - **Framework**: Flutter / Dart 3.8+
-- **State Management**: flutter_bloc v8.x
+- **State Management**: flutter_bloc v9.x
+- **Forms**: form_bloc + flutter_form_bloc
 - **Workspace**: Melos monorepo
 - **Native**: Kotlin (Android InputMethodService)
 - **Persistence**: shared_preferences
