@@ -130,10 +130,6 @@ melos run test
 melos run format
 ```
 
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
 ## License
 
 MIT
