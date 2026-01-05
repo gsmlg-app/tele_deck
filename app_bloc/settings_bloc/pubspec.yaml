@@ -1,0 +1,32 @@
+name: settings_bloc
+description: Settings state management BLoC for TeleDeck
+publish_to: 'none'
+
+version: 1.0.0
+
+environment:
+  sdk: ">=3.8.0 <4.0.0"
+  flutter: ">=3.10.0"
+
+resolution: workspace
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # BLoC
+  bloc: any
+  flutter_bloc: any
+  equatable: any
+
+  # Internal packages
+  tele_lib: any
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: any
+  bloc_test: ^9.0.0
+
+flutter:
+  uses-material-design: true

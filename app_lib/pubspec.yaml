@@ -1,0 +1,35 @@
+name: tele_lib
+description: Core library for TeleDeck - models, services, theme, and utilities
+publish_to: 'none'
+
+version: 1.0.0
+
+environment:
+  sdk: ">=3.8.0 <4.0.0"
+  flutter: ">=3.10.0"
+
+resolution: workspace
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Core utilities
+  logging: any
+  equatable: any
+
+  # Persistence
+  shared_preferences: any
+  path_provider: any
+  path: any
+
+  # UI
+  google_fonts: any
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: any
+
+flutter:
+  uses-material-design: true

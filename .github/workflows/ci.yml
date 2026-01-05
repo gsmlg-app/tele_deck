@@ -15,11 +15,14 @@ jobs:
 
       - uses: flutter-actions/setup-flutter@v4
 
-      - name: Install dependencies
-        run: flutter pub get
+      - name: Install Melos
+        run: dart pub global activate melos
+
+      - name: Bootstrap workspace
+        run: melos bootstrap
 
       - name: Analyze project source
-        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+        run: melos run analyze
 
   build-android:
     runs-on: ubuntu-latest
@@ -35,8 +38,11 @@ jobs:
 
       - uses: flutter-actions/setup-flutter@v4
 
-      - name: Install dependencies
-        run: flutter pub get
+      - name: Install Melos
+        run: dart pub global activate melos
+
+      - name: Bootstrap workspace
+        run: melos bootstrap
 
       - name: Build Android APK (debug)
         run: flutter build apk --debug
