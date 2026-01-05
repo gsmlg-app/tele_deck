@@ -1,0 +1,15 @@
+name: tele_constants
+description: Constants and configuration for TeleDeck
+publish_to: 'none'
+
+version: 1.0.0
+
+environment:
+  sdk: ">=3.8.0 <4.0.0"
+
+resolution: workspace
+
+dependencies: {}
+
+dev_dependencies:
+  flutter_lints: any

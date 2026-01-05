@@ -1,93 +1,138 @@
 # TeleDeck
 
-A dual-screen custom keyboard application for Android handheld devices with secondary displays (Ayaneo Pocket DS, etc.).
+A System IME (Input Method Editor) for Android with dual-screen support, designed for handheld devices like Ayaneo Pocket DS.
 
 ## Overview
 
-TeleDeck transforms your dual-screen device into a dedicated input system:
-- **Primary Screen**: Read-only virtual input field with real-time text updates
-- **Secondary Screen**: Cyberpunk-styled QWERTY keyboard with neon glow effects
+TeleDeck is a custom keyboard that runs as a system input method, allowing it to work with any app on your device. On dual-screen devices, the keyboard renders on the secondary display while you type into apps on the primary screen.
 
-Communication between screens uses low-latency IPC via Dart's `IsolateNameServer`.
+**Key Features:**
+- System-wide input method (works with any app)
+- Dual-screen support (keyboard on secondary display)
+- Multiple keyboard layouts (Standard, Numpad, Emoji, Function row)
+- Cyberpunk aesthetic with neon glow effects
+- Modifier key support (Shift, Ctrl, Alt, Super, Fn)
+- Configurable keyboard rotation (0°, 90°, 180°, 270°)
+- Crash logging with 7-day retention
 
-## Features
+## Screenshots
 
-- Custom QWERTY keyboard with cyberpunk aesthetic (dark theme, neon cyan/magenta accents)
-- Real-time keystroke transmission via IPC
-- Blinking cursor and character/word/line count display
-- Shift key with auto-disable after character input
-- Support for device folding/unfolding events
-- **Physical button binding** for keyboard toggle via Android Intents
-- **Configurable startup behavior** (hidden by default, show on startup, remember last state)
-- **Settings UI** accessible from both main screen and keyboard
+The keyboard features a dark cyberpunk theme with neon cyan and magenta accents.
 
-## Physical Button Binding
+## Installation
 
-Ayaneo Pocket DS (or other devices) can bind physical buttons to these actions:
+### From APK
 
-| Action | Intent |
-|--------|--------|
-| Toggle Keyboard | `app.gsmlg.tele_deck.TOGGLE_KEYBOARD` |
-| Show Keyboard | `app.gsmlg.tele_deck.SHOW_KEYBOARD` |
-| Hide Keyboard | `app.gsmlg.tele_deck.HIDE_KEYBOARD` |
+1. Download the latest APK from [Releases](https://github.com/gsmlg-app/tele_deck/releases)
+2. Install the APK on your device
+3. Open the TeleDeck app
+4. Follow the setup guide to enable and activate the IME
 
-Test via ADB:
+### From Source
+
 ```bash
-adb shell am broadcast -a app.gsmlg.tele_deck.TOGGLE_KEYBOARD
+# Clone the repository
+git clone https://github.com/gsmlg-app/tele_deck.git
+cd tele_deck
+
+# Install dependencies (uses Melos for monorepo management)
+melos bootstrap
+
+# Build release APK
+flutter build apk --release
+
+# Or run in debug mode
+flutter run
+```
+
+## Setup Guide
+
+After installing TeleDeck, you need to enable it as an input method:
+
+1. **Enable IME**: Go to Settings > System > Languages & Input > On-screen keyboard > Manage on-screen keyboards > Enable "TeleDeck"
+2. **Select IME**: Tap "Select TeleDeck as active keyboard" or use the keyboard switcher when typing
+3. **Done**: The keyboard will now appear when you tap any text field
+
+The TeleDeck app includes a setup guide that walks you through these steps.
+
+## Keyboard Layouts
+
+| Layout | Description |
+|--------|-------------|
+| Standard | Full QWERTY with 6 rows (function keys, numbers, letters) |
+| Numpad | Numeric keypad for number entry |
+| Emoji | Emoji picker (coming soon) |
+
+### Modifier Keys
+
+- **Shift**: Capitalize letters (tap once) or lock (double-tap)
+- **Caps Lock**: Toggle caps lock mode
+- **Ctrl/Alt/Super**: Modifier keys for shortcuts
+- **Fn**: Access function keys and special characters
+
+## Architecture
+
+TeleDeck uses a Melos monorepo with BLoC state management:
+
+```
+tele_deck/
+├── lib/                    # App entry points
+│   ├── main.dart           # Launcher (settings/setup)
+│   └── main_ime.dart       # IME keyboard
+├── app_lib/                # Core libraries
+│   ├── tele_theme/         # Cyberpunk theme
+│   ├── tele_models/        # Data models
+│   ├── tele_services/      # Platform services
+│   ├── tele_logging/       # Crash logging
+│   └── tele_constants/     # Constants
+├── app_bloc/               # State management
+│   ├── keyboard_bloc/      # Keyboard state
+│   ├── settings_bloc/      # Settings
+│   └── setup_bloc/         # Setup flow
+├── app_widget/             # UI components
+│   ├── keyboard_widgets/   # Keyboard UI
+│   ├── settings_widgets/   # Settings UI
+│   └── common_widgets/     # Shared widgets
+├── third_party/            # Third-party packages
+│   ├── form_bloc/          # Form state management
+│   └── flutter_form_bloc/  # Flutter form widgets
+└── android/                # Native code
 ```
 
 ## Requirements
 
-- Android device with secondary display support
-- Android SDK 26+ (Android 8.0 Oreo)
-- Flutter SDK 3.10+
-
-## Getting Started
-
-```bash
-# Install dependencies
-flutter pub get
-
-# Run on connected device
-flutter run
-
-# Build release APK
-flutter build apk
-```
-
-## Architecture
-
-```
-lib/
-├── main.dart                      # Main screen entry point
-├── main_keyboard.dart             # Secondary screen entry point
-├── shared/
-│   ├── constants.dart             # Theme colors, keyboard layout
-│   └── protocol.dart              # IPC event protocol (KeyboardEvent)
-├── settings/
-│   ├── settings_model.dart        # Settings data class
-│   ├── settings_provider.dart     # Riverpod state management
-│   ├── settings_service.dart      # Persistence layer
-│   └── views/
-│       └── settings_view.dart     # Settings UI
-├── main_screen/
-│   ├── display_controller.dart    # IPC listener, Riverpod state
-│   └── views/
-│       └── main_display_view.dart # Input display UI
-└── keyboard_screen/
-    ├── keyboard_service.dart      # IPC sender
-    └── views/
-        ├── keyboard_view.dart     # QWERTY layout
-        └── keyboard_key.dart      # Key widget with glow effect
-```
+- Android 8.0+ (API 26+)
+- Flutter 3.x
+- For dual-screen: Device with secondary display support
 
 ## Tech Stack
 
-- **Framework**: Flutter / Dart 3.0+
-- **State Management**: flutter_riverpod v2
-- **Multi-Screen**: sub_screen (Android Presentation API)
-- **IPC**: dart:ui IsolateNameServer + ReceivePort/SendPort
+- **Framework**: Flutter / Dart 3.8+
+- **State Management**: flutter_bloc v9.x
+- **Forms**: form_bloc + flutter_form_bloc
+- **Workspace**: Melos monorepo
+- **Native**: Kotlin (Android InputMethodService)
 - **Persistence**: shared_preferences
+
+## Development
+
+```bash
+# Bootstrap workspace
+melos bootstrap
+
+# Run analysis
+melos run analyze
+
+# Run tests
+melos run test
+
+# Format code
+melos run format
+```
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 

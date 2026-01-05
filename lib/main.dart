@@ -1,75 +1,12 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:sub_screen/model.dart';
-import 'package:sub_screen/sub_screen.dart';
-
-import 'keyboard_screen/views/keyboard_view.dart';
-import 'main_screen/views/main_display_view.dart';
-import 'settings/settings_provider.dart';
-import 'settings/views/settings_view.dart';
-import 'shared/constants.dart';
-
-/// Secondary entry point for the keyboard display
-/// This MUST be in the same library as main() for the engine to find it
-@pragma('vm:entry-point')
-void keyboardEntry() {
-  WidgetsFlutterBinding.ensureInitialized();
-
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.light,
-      systemNavigationBarColor: Color(TeleDeckColors.darkBackground),
-      systemNavigationBarIconBrightness: Brightness.light,
-    ),
-  );
-
-  runApp(
-    const ProviderScope(
-      child: KeyboardApp(),
-    ),
-  );
-}
-
-/// Keyboard app for secondary display
-class KeyboardApp extends StatelessWidget {
-  const KeyboardApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'TeleDeck Keyboard',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        brightness: Brightness.dark,
-        scaffoldBackgroundColor: Color(TeleDeckColors.darkBackground),
-        colorScheme: ColorScheme.dark(
-          primary: Color(TeleDeckColors.neonCyan),
-          secondary: Color(TeleDeckColors.neonMagenta),
-          surface: Color(TeleDeckColors.secondaryBackground),
-        ),
-      ),
-      // Allow all orientations for secondary display
-      builder: (context, child) {
-        return MediaQuery(
-          data: MediaQuery.of(context).copyWith(
-            // Ensure text scales appropriately
-            textScaler: TextScaler.noScaling,
-          ),
-          child: child!,
-        );
-      },
-      home: const KeyboardView(),
-    );
-  }
-}
-
-/// MethodChannel for receiving keyboard toggle commands from native Android
-const _toggleChannel = MethodChannel('app.gsmlg.tele_deck/keyboard_toggle');
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:common_widgets/common_widgets.dart';
+import 'package:settings_bloc/settings_bloc.dart';
+import 'package:settings_widgets/settings_widgets.dart';
+import 'package:setup_bloc/setup_bloc.dart';
+import 'package:tele_services/tele_services.dart';
+import 'package:tele_theme/tele_theme.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -84,125 +21,85 @@ void main() {
     ),
   );
 
+  // Initialize services
+  final imeChannelService = ImeChannelService();
+  imeChannelService.init();
+
+  final settingsService = SettingsService();
+
   runApp(
-    const ProviderScope(
-      child: TeleDeckApp(),
+    MultiBlocProvider(
+      providers: [
+        BlocProvider<SettingsBloc>(
+          create: (context) =>
+              SettingsBloc(settingsService: settingsService)..add(const SettingsLoaded()),
+        ),
+        BlocProvider<SetupBloc>(
+          create: (context) =>
+              SetupBloc(imeService: imeChannelService)..add(const SetupCheckRequested()),
+        ),
+      ],
+      child: TeleDeckLauncherApp(imeChannelService: imeChannelService),
     ),
   );
 }
 
-class TeleDeckApp extends ConsumerStatefulWidget {
-  const TeleDeckApp({super.key});
+/// Launcher app - shows setup guide or settings
+class TeleDeckLauncherApp extends StatefulWidget {
+  final ImeChannelService imeChannelService;
+
+  const TeleDeckLauncherApp({
+    super.key,
+    required this.imeChannelService,
+  });
 
   @override
-  ConsumerState<TeleDeckApp> createState() => _TeleDeckAppState();
+  State<TeleDeckLauncherApp> createState() => _TeleDeckLauncherAppState();
 }
 
-class _TeleDeckAppState extends ConsumerState<TeleDeckApp> {
-  int? _secondaryDisplayId;
+class _TeleDeckLauncherAppState extends State<TeleDeckLauncherApp>
+    with WidgetsBindingObserver {
+  bool _showCrashLogs = false;
 
   @override
   void initState() {
     super.initState();
-    _initApp();
+    WidgetsBinding.instance.addObserver(this);
+    _setupMethodChannelListener();
   }
 
-  Future<void> _initApp() async {
-    // Initialize settings
-    await ref.read(settingsServiceProvider).init();
-    await ref.read(appSettingsProvider.notifier).loadSettings();
-    ref.read(settingsInitializedProvider.notifier).state = true;
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    widget.imeChannelService.dispose();
+    super.dispose();
+  }
 
-    // Initialize display monitoring
-    await _initDisplayMonitoring();
-
-    // Setup native method channel listener for keyboard toggle
-    _setupToggleListener();
-
-    // Check initial visibility based on settings
-    final settings = ref.read(appSettingsProvider);
-    if (settings.initialKeyboardVisible && _secondaryDisplayId != null) {
-      ref.read(keyboardVisibleProvider.notifier).state = true;
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    // Refresh IME status when app resumes (user might have changed settings)
+    if (state == AppLifecycleState.resumed) {
+      context.read<SetupBloc>().add(const SetupCheckRequested());
     }
   }
 
-  Future<void> _initDisplayMonitoring() async {
-    // Set up display change listeners
-    SubScreenPlugin.setOnMultiDisplayListener(OnMultiDisplayListener(
-      onDisplayAdded: (Display display) {
-        if (!display.isDefault) {
-          setState(() {
-            _secondaryDisplayId = display.id;
-          });
-          // Auto-show keyboard if settings allow
-          final settings = ref.read(appSettingsProvider);
-          if (settings.initialKeyboardVisible) {
-            ref.read(keyboardVisibleProvider.notifier).state = true;
-          }
-        }
-      },
-      onDisplayChanged: (Display display) {
-        // Handle display changes if needed
-      },
-      onDisplayRemoved: (int displayId) {
-        if (displayId == _secondaryDisplayId) {
-          setState(() {
-            _secondaryDisplayId = null;
-          });
-          ref.read(keyboardVisibleProvider.notifier).state = false;
-        }
-      },
-    ));
-
-    // Check for existing secondary displays
-    final displays = await SubScreenPlugin.getDisplays();
-    for (var display in displays) {
-      if (!display.isDefault) {
-        setState(() {
-          _secondaryDisplayId = display.id;
-        });
-        break;
-      }
-    }
-  }
-
-  void _setupToggleListener() {
-    _toggleChannel.setMethodCallHandler((call) async {
+  void _setupMethodChannelListener() {
+    const settingsChannel = MethodChannel('app.gsmlg.tele_deck/settings');
+    settingsChannel.setMethodCallHandler((call) async {
       switch (call.method) {
-        case 'toggleKeyboard':
-          _toggleKeyboard();
+        case 'onIMEStatusChanged':
+          // Refresh setup guide when IME status changes
+          if (mounted) {
+            context.read<SetupBloc>().add(const SetupCheckRequested());
+          }
           break;
-        case 'showKeyboard':
-          _showKeyboard();
-          break;
-        case 'hideKeyboard':
-          _hideKeyboard();
+        case 'viewCrashLogs':
+          // Deep link from crash notification
+          setState(() => _showCrashLogs = true);
           break;
       }
     });
-  }
-
-  void _toggleKeyboard() {
-    final isVisible = ref.read(keyboardVisibleProvider);
-    if (isVisible) {
-      _hideKeyboard();
-    } else {
-      _showKeyboard();
-    }
-  }
-
-  void _showKeyboard() {
-    if (_secondaryDisplayId == null) return;
-
-    ref.read(keyboardVisibleProvider.notifier).state = true;
-    ref.read(appSettingsProvider.notifier).saveVisibilityState(true);
-  }
-
-  void _hideKeyboard() {
-    if (_secondaryDisplayId == null) return;
-
-    ref.read(keyboardVisibleProvider.notifier).state = false;
-    ref.read(appSettingsProvider.notifier).saveVisibilityState(false);
   }
 
   @override
@@ -210,24 +107,105 @@ class _TeleDeckAppState extends ConsumerState<TeleDeckApp> {
     return MaterialApp(
       title: 'TeleDeck',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        brightness: Brightness.dark,
-        scaffoldBackgroundColor: Color(TeleDeckColors.darkBackground),
-        colorScheme: ColorScheme.dark(
-          primary: Color(TeleDeckColors.neonCyan),
-          secondary: Color(TeleDeckColors.neonMagenta),
-          surface: Color(TeleDeckColors.secondaryBackground),
-        ),
+      theme: TeleDeckTheme.darkTheme,
+      builder: (context, child) {
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(
+            textScaler: TextScaler.noScaling,
+          ),
+          child: child!,
+        );
+      },
+      home: _LauncherHome(
+        showCrashLogs: _showCrashLogs,
+        onCrashLogsShown: () => setState(() => _showCrashLogs = false),
       ),
-      initialRoute: '/',
-      routes: {
-        '/': (context) => MainDisplayView(
-              onToggleKeyboard: _toggleKeyboard,
-              onShowKeyboard: _showKeyboard,
-              onHideKeyboard: _hideKeyboard,
+    );
+  }
+}
+
+/// Home widget that decides which view to show based on IME status
+class _LauncherHome extends StatelessWidget {
+  final bool showCrashLogs;
+  final VoidCallback onCrashLogsShown;
+
+  const _LauncherHome({
+    required this.showCrashLogs,
+    required this.onCrashLogsShown,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // Handle deep link to crash logs
+    if (showCrashLogs) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        onCrashLogsShown();
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (context) => const CrashLogViewer()),
+        );
+      });
+    }
+
+    return BlocBuilder<SetupBloc, SetupState>(
+      builder: (context, setupState) {
+        // If setup is complete, show settings view
+        if (setupState.isComplete) {
+          return SettingsView(
+            onViewCrashLogs: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (context) => const CrashLogViewer()),
+              );
+            },
+          );
+        }
+
+        // Otherwise show setup guide
+        return Scaffold(
+          backgroundColor: const Color(TeleDeckColors.darkBackground),
+          appBar: AppBar(
+            backgroundColor: const Color(TeleDeckColors.secondaryBackground),
+            title: ShaderMask(
+              shaderCallback: (bounds) => const LinearGradient(
+                colors: [
+                  Color(TeleDeckColors.neonCyan),
+                  Color(TeleDeckColors.neonMagenta),
+                ],
+              ).createShader(bounds),
+              child: const Text(
+                'TELEDECK',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                  letterSpacing: 4,
+                ),
+              ),
             ),
-        '/settings': (context) => const SettingsView(),
+            centerTitle: true,
+          ),
+          body: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: SetupGuideView(
+                onComplete: () {
+                  // Navigate to settings when setup is complete
+                  Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(
+                      builder: (context) => SettingsView(
+                        onViewCrashLogs: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                                builder: (context) => const CrashLogViewer()),
+                          );
+                        },
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        );
       },
     );
   }

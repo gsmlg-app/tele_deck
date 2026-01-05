@@ -1,0 +1,28 @@
+name: tele_services
+description: Services for TeleDeck
+publish_to: 'none'
+
+version: 1.0.0
+
+environment:
+  sdk: ">=3.8.0 <4.0.0"
+  flutter: ">=3.10.0"
+
+resolution: workspace
+
+dependencies:
+  flutter:
+    sdk: flutter
+  shared_preferences: any
+
+  # Internal packages
+  tele_models: any
+  tele_constants: any
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: any
+
+flutter:
+  uses-material-design: true

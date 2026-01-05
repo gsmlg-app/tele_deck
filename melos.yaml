@@ -1,0 +1,31 @@
+name: tele_deck
+repository: https://github.com/gsmlg-dev/tele_deck
+
+packages:
+  - .
+  - app_lib/**
+  - app_bloc/**
+  - app_widget/**
+
+command:
+  bootstrap:
+    usePubspecOverrides: true
+
+scripts:
+  analyze:
+    run: melos exec -- flutter analyze --no-fatal-warnings
+    description: Run flutter analyze in all packages
+
+  test:
+    run: melos exec -- flutter test
+    description: Run flutter test in all packages
+    packageFilters:
+      dirExists: test
+
+  format:
+    run: melos exec -- dart format .
+    description: Format all packages
+
+  get:
+    run: melos bootstrap
+    description: Get all dependencies

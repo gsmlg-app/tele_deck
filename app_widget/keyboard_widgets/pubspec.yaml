@@ -1,0 +1,34 @@
+name: keyboard_widgets
+description: Keyboard UI widgets for TeleDeck
+publish_to: 'none'
+
+version: 1.0.0
+
+environment:
+  sdk: ">=3.8.0 <4.0.0"
+  flutter: ">=3.10.0"
+
+resolution: workspace
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # BLoC
+  flutter_bloc: any
+
+  # UI
+  google_fonts: any
+
+  # Internal packages
+  tele_theme: any
+  tele_constants: any
+  keyboard_bloc: any
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: any
+
+flutter:
+  uses-material-design: true
