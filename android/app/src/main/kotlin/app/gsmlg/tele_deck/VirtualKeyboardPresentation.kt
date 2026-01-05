@@ -32,19 +32,18 @@ class VirtualKeyboardPresentation(
         super.onCreate(savedInstanceState)
         Log.d(TAG, "VirtualKeyboardPresentation onCreate")
 
-        // Configure window for keyboard presentation
+        // Configure window for keyboard presentation on secondary display
+        // NOTE: Do NOT use TYPE_INPUT_METHOD here - it's only valid for primary display IME
+        // Presentation windows manage their own window type internally
         window?.let { window ->
-            // Set window type for IME
-            window.setType(WindowManager.LayoutParams.TYPE_INPUT_METHOD)
+            Log.d(TAG, "Configuring window for display: ${display.displayId}")
 
             // Make the presentation fullscreen on the secondary display
             window.setFlags(
                 WindowManager.LayoutParams.FLAG_FULLSCREEN or
-                WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
-                WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+                WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
                 WindowManager.LayoutParams.FLAG_FULLSCREEN or
-                WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
-                WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
+                WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
             )
 
             // Set hardware acceleration
@@ -52,7 +51,9 @@ class VirtualKeyboardPresentation(
 
             // Keep screen on while keyboard is displayed
             window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        }
+
+            Log.d(TAG, "Window configured successfully")
+        } ?: Log.e(TAG, "Window is null - cannot configure presentation")
 
         // Create and attach FlutterView
         createFlutterView()

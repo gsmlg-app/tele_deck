@@ -273,9 +273,15 @@ class TeleDeckIMEService : InputMethodService() {
     }
 
     private fun findSecondaryDisplay() {
-        displayManager?.displays?.forEach { display ->
+        val displays = displayManager?.displays
+        Log.d(TAG, "Searching for secondary display. Total displays: ${displays?.size ?: 0}")
+
+        displays?.forEach { display ->
+            Log.d(TAG, "Display ${display.displayId}: ${display.name}, state: ${display.state}, flags: ${display.flags}")
             if (display.displayId != Display.DEFAULT_DISPLAY) {
                 Log.d(TAG, "Found secondary display: ${display.displayId} - ${display.name}")
+                Log.d(TAG, "  Size: ${display.mode.physicalWidth}x${display.mode.physicalHeight}")
+                Log.d(TAG, "  State: ${display.state}, Flags: ${display.flags}")
                 secondaryDisplay = display
                 return
             }
@@ -470,25 +476,36 @@ class TeleDeckIMEService : InputMethodService() {
             return
         }
 
-        flutterEngine?.let { engine ->
-            Log.d(TAG, "Showing keyboard presentation on display: ${display.displayId}")
+        val engine = flutterEngine
+        if (engine == null) {
+            Log.e(TAG, "FlutterEngine is null - cannot show presentation")
+            return
+        }
+
+        Log.d(TAG, "Creating keyboard presentation on display: ${display.displayId}")
+        Log.d(TAG, "  Display name: ${display.name}")
+        Log.d(TAG, "  Display size: ${display.mode.physicalWidth}x${display.mode.physicalHeight}")
+        Log.d(TAG, "  Display state: ${display.state}")
+        Log.d(TAG, "  Display valid: ${display.isValid}")
+
+        try {
             presentation = VirtualKeyboardPresentation(this, display, engine).apply {
-                try {
-                    show()
-                    // Notify Flutter we're in secondary display mode
-                    notifyDisplayModeChanged("secondary", display)
-                } catch (e: Exception) {
-                    Log.e(TAG, "Failed to show presentation", e)
-                    // Log crash with display state
-                    CrashLogger.logException(
-                        context = this@TeleDeckIMEService,
-                        exception = e as? Exception ?: Exception(e.message),
-                        displayState = getDisplayState(),
-                        engineState = "running"
-                    )
-                    presentation = null
-                }
+                Log.d(TAG, "Calling presentation.show()")
+                show()
+                Log.d(TAG, "Presentation shown successfully, isShowing: $isShowing")
+                // Notify Flutter we're in secondary display mode
+                notifyDisplayModeChanged("secondary", display)
             }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to show presentation: ${e.message}", e)
+            // Log crash with display state
+            CrashLogger.logException(
+                context = this@TeleDeckIMEService,
+                exception = e,
+                displayState = getDisplayState(),
+                engineState = "running"
+            )
+            presentation = null
         }
     }
 
