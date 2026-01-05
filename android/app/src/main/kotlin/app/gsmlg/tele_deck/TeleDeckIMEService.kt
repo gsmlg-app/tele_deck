@@ -46,6 +46,8 @@ class TeleDeckIMEService : InputMethodService() {
     private var secondaryDisplay: Display? = null
     private var primaryFlutterView: FlutterView? = null
     private var inputViewContainer: FrameLayout? = null
+    private var isInPrimaryFallbackMode: Boolean = false
+    private var isPrimaryViewAttached: Boolean = false
 
     // Handler for debouncing display events
     private val mainHandler = Handler(Looper.getMainLooper())
@@ -247,6 +249,8 @@ class TeleDeckIMEService : InputMethodService() {
 
         // Attach engine to FlutterView
         primaryFlutterView?.attachToFlutterEngine(engine)
+        isPrimaryViewAttached = true
+        isInPrimaryFallbackMode = true
 
         inputViewContainer?.addView(primaryFlutterView)
 
@@ -370,6 +374,7 @@ class TeleDeckIMEService : InputMethodService() {
             // Secondary display exists - return 0-height view for primary screen
             // The actual keyboard is shown on the secondary display via Presentation
             Log.d(TAG, "Using secondary display mode - returning 0-height view")
+            isInPrimaryFallbackMode = false
             createEmptyView()
         } else {
             // No secondary display - render keyboard on primary with 50% max height
@@ -380,31 +385,62 @@ class TeleDeckIMEService : InputMethodService() {
 
     override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
         super.onStartInputView(info, restarting)
-        Log.d(TAG, "onStartInputView - restarting: $restarting")
+        Log.d(TAG, "onStartInputView - restarting: $restarting, primaryFallback: $isInPrimaryFallbackMode")
 
         // Notify Flutter about input connection
         notifyFlutterConnectionStatus(true)
 
-        // Show keyboard on secondary display if available
-        showKeyboardPresentation()
+        if (isInPrimaryFallbackMode) {
+            // In primary fallback mode - ensure FlutterView is attached
+            ensurePrimaryViewAttached()
+            // Notify Flutter about primary fallback mode
+            notifyDisplayModeChanged("primary_fallback", null)
+        } else {
+            // Show keyboard on secondary display if available
+            showKeyboardPresentation()
+        }
+    }
+
+    /**
+     * Ensure the primary FlutterView is attached to the engine.
+     * This is needed because Android caches the input view and reuses it.
+     */
+    private fun ensurePrimaryViewAttached() {
+        if (!isPrimaryViewAttached && primaryFlutterView != null && flutterEngine != null) {
+            Log.d(TAG, "Re-attaching primary FlutterView to engine")
+            try {
+                primaryFlutterView?.attachToFlutterEngine(flutterEngine!!)
+                isPrimaryViewAttached = true
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to re-attach FlutterView", e)
+            }
+        }
     }
 
     override fun onFinishInputView(finishingInput: Boolean) {
         super.onFinishInputView(finishingInput)
-        Log.d(TAG, "onFinishInputView - finishing: $finishingInput")
+        Log.d(TAG, "onFinishInputView - finishing: $finishingInput, primaryFallback: $isInPrimaryFallbackMode")
 
         // Notify Flutter about disconnection
         notifyFlutterConnectionStatus(false)
 
-        // Hide keyboard presentation (secondary display mode)
-        hideKeyboardPresentation()
-
-        // Clean up primary FlutterView if used (single-screen mode)
-        cleanupPrimaryFlutterView()
+        if (isInPrimaryFallbackMode) {
+            // In primary fallback mode - DON'T cleanup the view, just mark as detached
+            // Android caches the input view and will reuse it
+            // We'll re-attach in onStartInputView
+            Log.d(TAG, "Primary fallback mode - keeping view for reuse")
+            // Don't detach - keep the view attached for smooth transitions
+        } else {
+            // Hide keyboard presentation (secondary display mode)
+            hideKeyboardPresentation()
+        }
     }
 
     /**
-     * Clean up the primary FlutterView when switching modes or finishing input
+     * Clean up the primary FlutterView when switching modes or destroying service.
+     * This should only be called when:
+     * 1. Switching from primary fallback to secondary display mode
+     * 2. Service is being destroyed
      */
     private fun cleanupPrimaryFlutterView() {
         primaryFlutterView?.let { view ->
@@ -418,6 +454,8 @@ class TeleDeckIMEService : InputMethodService() {
         primaryFlutterView = null
         inputViewContainer?.removeAllViews()
         inputViewContainer = null
+        isPrimaryViewAttached = false
+        isInPrimaryFallbackMode = false
     }
 
     private fun showKeyboardPresentation() {
@@ -529,10 +567,25 @@ class TeleDeckIMEService : InputMethodService() {
      * Toggle keyboard visibility (for external triggers like physical buttons)
      */
     fun toggleKeyboard() {
-        if (presentation != null) {
-            hideKeyboardPresentation()
+        Log.d(TAG, "toggleKeyboard - primaryFallback: $isInPrimaryFallbackMode, hasSecondary: ${secondaryDisplay != null}")
+        if (secondaryDisplay != null) {
+            // Secondary display mode - toggle presentation
+            if (presentation != null) {
+                hideKeyboardPresentation()
+            } else {
+                showKeyboardPresentation()
+            }
         } else {
-            showKeyboardPresentation()
+            // Primary fallback mode - use IME framework to toggle
+            // In primary mode, the keyboard visibility is managed by the system
+            // We can request to show/hide via InputMethodManager
+            val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+            if (isInputViewShown) {
+                requestHideSelf(0)
+            } else {
+                // Request to show the keyboard - this will trigger onStartInputView
+                requestShowSelf(0)
+            }
         }
     }
 
@@ -540,14 +593,26 @@ class TeleDeckIMEService : InputMethodService() {
      * Show keyboard (for external triggers)
      */
     fun showKeyboard() {
-        showKeyboardPresentation()
+        Log.d(TAG, "showKeyboard - primaryFallback: $isInPrimaryFallbackMode")
+        if (secondaryDisplay != null) {
+            showKeyboardPresentation()
+        } else {
+            // Primary fallback mode - request show via IME framework
+            requestShowSelf(0)
+        }
     }
 
     /**
      * Hide keyboard (for external triggers)
      */
     fun hideKeyboard() {
-        hideKeyboardPresentation()
+        Log.d(TAG, "hideKeyboard - primaryFallback: $isInPrimaryFallbackMode")
+        if (secondaryDisplay != null) {
+            hideKeyboardPresentation()
+        } else {
+            // Primary fallback mode - request hide via IME framework
+            requestHideSelf(0)
+        }
     }
 
     override fun onDestroy() {
