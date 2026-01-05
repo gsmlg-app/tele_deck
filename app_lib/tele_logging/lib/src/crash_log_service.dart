@@ -3,8 +3,8 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:tele_models/tele_models.dart';
 
-import '../models/display_state.dart';
 import 'crash_log_entry.dart';
 
 /// Service for managing crash logs with file-based persistence and 7-day cleanup.

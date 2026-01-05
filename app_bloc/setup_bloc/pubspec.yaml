@@ -20,7 +20,8 @@ dependencies:
   equatable: any
 
   # Internal packages
-  tele_lib: any
+  tele_models: any
+  tele_services: any
 
 dev_dependencies:
   flutter_test:

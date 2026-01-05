@@ -3,7 +3,7 @@ repository: https://github.com/gsmlg-dev/tele_deck
 
 packages:
   - .
-  - app_lib
+  - app_lib/**
   - app_bloc/**
   - app_widget/**
 

@@ -1,9 +1,7 @@
-import 'package:equatable/equatable.dart';
-
-import '../models/display_state.dart';
+import 'package:tele_models/tele_models.dart';
 
 /// Represents a single crash log entry persisted to local storage.
-class CrashLogEntry extends Equatable {
+class CrashLogEntry {
   /// Unique identifier (timestamp-based)
   final String id;
 
@@ -135,9 +133,6 @@ class CrashLogEntry extends Equatable {
   }
 
   @override
-  List<Object?> get props => [id];
-
-  @override
   String toString() {
     return 'CrashLogEntry('
         'id: $id, '
@@ -145,4 +140,13 @@ class CrashLogEntry extends Equatable {
         'errorType: $errorType, '
         'message: $message)';
   }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is CrashLogEntry && other.id == id;
+  }
+
+  @override
+  int get hashCode => id.hashCode;
 }

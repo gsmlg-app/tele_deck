@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:tele_lib/tele_lib.dart';
+import 'package:tele_theme/tele_theme.dart';
 
 /// A single keyboard key with cyberpunk styling
 class KeyboardKey extends StatefulWidget {

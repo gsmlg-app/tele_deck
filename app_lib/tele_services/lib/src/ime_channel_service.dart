@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
-
-import '../constants/ime_constants.dart';
+import 'package:tele_constants/tele_constants.dart';
 
 /// Centralized service for IME MethodChannel communication.
 ///

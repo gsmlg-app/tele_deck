@@ -1,5 +1,5 @@
-name: tele_lib
-description: Core library for TeleDeck - models, services, theme, and utilities
+name: tele_theme
+description: Theme package for TeleDeck
 publish_to: 'none'
 
 version: 1.0.0
@@ -13,17 +13,6 @@ resolution: workspace
 dependencies:
   flutter:
     sdk: flutter
-
-  # Core utilities
-  logging: any
-  equatable: any
-
-  # Persistence
-  shared_preferences: any
-  path_provider: any
-  path: any
-
-  # UI
   google_fonts: any
 
 dev_dependencies:

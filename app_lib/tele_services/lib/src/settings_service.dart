@@ -1,8 +1,7 @@
 import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
-
-import '../models/app_settings.dart';
+import 'package:tele_models/tele_models.dart';
 
 /// Service for persisting and loading app settings
 class SettingsService {

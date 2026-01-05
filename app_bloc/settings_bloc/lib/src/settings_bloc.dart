@@ -1,5 +1,5 @@
 import 'package:bloc/bloc.dart';
-import 'package:tele_lib/tele_lib.dart';
+import 'package:tele_services/tele_services.dart';
 
 import 'settings_event.dart';
 import 'settings_state.dart';

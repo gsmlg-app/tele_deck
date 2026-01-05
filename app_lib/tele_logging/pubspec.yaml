@@ -1,5 +1,5 @@
-name: settings_bloc
-description: Settings state management BLoC for TeleDeck
+name: tele_logging
+description: Crash logging service for TeleDeck
 publish_to: 'none'
 
 version: 1.0.0
@@ -13,21 +13,15 @@ resolution: workspace
 dependencies:
   flutter:
     sdk: flutter
-
-  # BLoC
-  bloc: any
-  flutter_bloc: any
-  equatable: any
+  path_provider: any
 
   # Internal packages
   tele_models: any
-  tele_services: any
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: any
-  bloc_test: ^9.0.0
 
 flutter:
   uses-material-design: true

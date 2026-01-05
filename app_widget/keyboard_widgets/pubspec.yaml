@@ -21,7 +21,8 @@ dependencies:
   google_fonts: any
 
   # Internal packages
-  tele_lib: any
+  tele_theme: any
+  tele_constants: any
   keyboard_bloc: any
 
 dev_dependencies:

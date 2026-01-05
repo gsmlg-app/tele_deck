@@ -14,12 +14,12 @@ class KeyboardLayout {
 
   /// Symbol row (shifted number keys)
   static const List<String> symbolRow = [
-    '~', '!', '@', '#', r'$', '%', '^', '&', '*', '(', ')', '_', '+', 'BACKSPACE',
+    '~', '!', '@', '#', '\$', '%', '^', '&', '*', '(', ')', '_', '+', 'BACKSPACE',
   ];
 
   /// QWERTY row (Tab + letters + brackets + backslash)
   static const List<String> qwertyRow = [
-    'TAB', 'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '[', ']', r'\',
+    'TAB', 'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '[', ']', '\\',
   ];
 
   /// ASDF row (CapsLock + letters + semicolon + quote + Enter)

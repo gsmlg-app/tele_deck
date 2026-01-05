@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:keyboard_bloc/keyboard_bloc.dart';
-import 'package:tele_lib/tele_lib.dart';
+import 'package:tele_theme/tele_theme.dart';
 
 /// Inline mode selector overlay for switching keyboard modes
 class ModeSelectorOverlay extends StatelessWidget {

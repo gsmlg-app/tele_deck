@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import 'package:tele_lib/tele_lib.dart';
+import 'package:tele_models/tele_models.dart';
 
 /// Setup state
 class SetupState extends Equatable {

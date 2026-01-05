@@ -8,10 +8,17 @@ environment:
   sdk: ">=3.8.0 <4.0.0"
 
 workspace:
-  - app_lib
+  # Core library packages
+  - app_lib/tele_theme
+  - app_lib/tele_models
+  - app_lib/tele_services
+  - app_lib/tele_logging
+  - app_lib/tele_constants
+  # BLoC state management packages
   - app_bloc/keyboard_bloc
   - app_bloc/settings_bloc
   - app_bloc/setup_bloc
+  # Widget packages
   - app_widget/keyboard_widgets
   - app_widget/settings_widgets
   - app_widget/common_widgets
@@ -38,11 +45,17 @@ dependencies:
   cupertino_icons: ^1.0.8
   google_fonts: ^6.2.1
 
-  # Workspace packages
-  tele_lib: any
+  # Workspace packages - Core library
+  tele_theme: any
+  tele_models: any
+  tele_services: any
+  tele_logging: any
+  tele_constants: any
+  # Workspace packages - BLoC
   keyboard_bloc: any
   settings_bloc: any
   setup_bloc: any
+  # Workspace packages - Widgets
   keyboard_widgets: any
   settings_widgets: any
   common_widgets: any
