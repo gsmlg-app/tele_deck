@@ -36,9 +36,6 @@ dependencies:
   flutter_bloc: ^8.1.6
   equatable: ^2.0.7
 
-  # State management (Riverpod) - TEMPORARY: Remove after Phase 5 migration
-  flutter_riverpod: ^2.6.1
-
   # Persistence
   shared_preferences: ^2.3.5
   path_provider: ^2.1.5

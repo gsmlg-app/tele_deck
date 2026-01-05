@@ -4,80 +4,142 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-TeleDeck is a dual-screen Android application for handheld devices (Ayaneo Pocket DS). The secondary screen acts as a custom keyboard that sends keystrokes to the main screen via IPC.
+TeleDeck is a System IME (Input Method Editor) for Android that supports dual-screen devices (Ayaneo Pocket DS). It provides a custom keyboard that renders on the secondary display while sending input to apps on the primary screen.
+
+## Monorepo Structure
+
+This project uses **Melos** for workspace management with a multi-package architecture:
+
+```
+tele_deck/
+├── lib/                              # Main app entry points only
+│   ├── main.dart                     # Launcher app (settings/setup)
+│   └── main_ime.dart                 # IME keyboard entry point
+├── app_lib/                          # Core library packages
+│   ├── tele_theme/                   # Cyberpunk theme (TeleDeckColors, TeleDeckTheme)
+│   ├── tele_models/                  # Data models (AppSettings, DisplayState, SetupGuideState)
+│   ├── tele_services/                # Platform services (SettingsService, ImeChannelService)
+│   ├── tele_logging/                 # Crash logging (CrashLogEntry, CrashLogService)
+│   └── tele_constants/               # Constants (IPC, ImeMethod, DisplayMode, KeyboardLayout)
+├── app_bloc/                         # BLoC state management
+│   ├── keyboard_bloc/                # Keyboard state (modifiers, mode, connection)
+│   ├── settings_bloc/                # Settings persistence
+│   └── setup_bloc/                   # IME onboarding flow
+├── app_widget/                       # UI components
+│   ├── keyboard_widgets/             # Keyboard view with all layouts
+│   ├── settings_widgets/             # Settings and setup guide UI
+│   └── common_widgets/               # Shared widgets (crash log viewer)
+├── android/                          # Native Android code
+│   └── app/src/main/kotlin/.../      # TeleDeckIMEService, crash handler
+└── melos.yaml                        # Workspace configuration
+```
 
 ## Build Commands
 
 ```bash
-flutter pub get          # Install dependencies
-flutter analyze          # Run static analysis
-flutter test             # Run all tests
-flutter test test/widget_test.dart  # Run single test
+# Melos workspace commands
+melos bootstrap          # Install all dependencies and link packages
+melos run analyze        # Run flutter analyze on all packages
+melos run test           # Run tests for all packages
+melos run format         # Format all packages
+
+# Flutter commands
 flutter run              # Run on connected device
 flutter build apk        # Build release APK
+
+# Individual package development
+cd app_bloc/keyboard_bloc && flutter test
 ```
 
 ## Architecture
 
-### Dual-Screen Communication
+### System IME Architecture
 
-The app runs two separate Flutter engines (isolates) - one per screen. They communicate via `dart:ui` `IsolateNameServer` with `ReceivePort`/`SendPort` for low-latency IPC.
+TeleDeck runs as a System Input Method Editor (IME) service:
 
-- **Main Screen** (`lib/main.dart`): Registers a `ReceivePort` with `IsolateNameServer` using port name `teledeck_ipc_port`
-- **Keyboard Screen** (`lib/main_keyboard.dart`): Looks up the port via `IsolateNameServer.lookupPortByName()` and sends events
+1. **TeleDeckIMEService** (`android/.../TeleDeckIMEService.kt`): Native InputMethodService that hosts Flutter
+2. **IME Entry Point** (`lib/main_ime.dart`): Flutter keyboard UI, entry point `@pragma('vm:entry-point') void imeMain()`
+3. **Launcher App** (`lib/main.dart`): Setup guide and settings, run as a normal activity
 
-### Key Components
+### MethodChannel Communication
 
-- `lib/shared/protocol.dart`: Sealed class `KeyboardEvent` with subtypes (`KeyDown`, `Backspace`, `Enter`, `Space`, `Clear`, `Shift`) - serialized as Maps for IPC
-- `lib/shared/constants.dart`: IPC port name, theme colors (`TeleDeckColors`), QWERTY layout config
-- `lib/main_screen/display_controller.dart`: Riverpod providers for input state, IPC listening
-- `lib/keyboard_screen/keyboard_service.dart`: IPC sender service
+- `tele_deck/ime` - IME keyboard operations (commitText, backspace, enter, tab, etc.)
+- `app.gsmlg.tele_deck/settings` - Settings operations and IME status checks
+- `app.gsmlg.tele_deck/crash_logs` - Crash log operations
 
-### Settings System
+### State Management (BLoC)
 
-- `lib/settings/settings_model.dart`: `AppSettings` data class with serialization
-- `lib/settings/settings_service.dart`: Persistence via `shared_preferences`
-- `lib/settings/settings_provider.dart`: Riverpod providers (`appSettingsProvider`, `keyboardVisibleProvider`)
-- `lib/settings/views/settings_view.dart`: Settings UI screen
+Uses `flutter_bloc` for state management:
 
-### Physical Button Integration
+**KeyboardBloc** (`app_bloc/keyboard_bloc`):
+- Events: `KeyboardKeyPressed`, `KeyboardBackspacePressed`, `KeyboardEnterPressed`, `KeyboardShiftToggled`, `KeyboardCapsLockToggled`, `KeyboardModeChanged`, etc.
+- State: `isConnected`, `mode`, `shiftEnabled`, `shiftLocked`, `capsLockEnabled`, `ctrlEnabled`, `altEnabled`, `fnEnabled`, `displayMode`
 
-Android BroadcastReceiver (`ToggleKeyboardReceiver.kt`) handles external intents:
-- `app.gsmlg.tele_deck.TOGGLE_KEYBOARD` - Toggle visibility
-- `app.gsmlg.tele_deck.SHOW_KEYBOARD` - Show keyboard
-- `app.gsmlg.tele_deck.HIDE_KEYBOARD` - Hide keyboard
+**SettingsBloc** (`app_bloc/settings_bloc`):
+- Events: `SettingsLoaded`, `SettingsKeyboardRotationChanged`, `SettingsPreferredDisplayChanged`
+- State: `SettingsState` with `status` (initial/loading/success/failure), `settings` (AppSettings)
 
-Communication flow: BroadcastReceiver → MethodChannel → Flutter provider state
+**SetupBloc** (`app_bloc/setup_bloc`):
+- Events: `SetupCheckRequested`, `SetupOpenImeSettings`, `SetupImeStatusChanged`
+- State: `SetupState` with `guideState` (currentStep, imeEnabled, imeActive, isComplete)
 
-### Multi-Display Management
+### Key Services
 
-Uses `sub_screen` package (Android Presentation API):
-- `SubScreenPlugin.getDisplays()` to detect secondary displays
-- `OnMultiDisplayListener` for display connect/disconnect events
-- `MultiDisplayFlutterActivity` in Android handles secondary screen launch
-- `@pragma('vm:entry-point') void keyboardEntry()` is the secondary screen entry point
-- Secondary screen auto-launches when display is connected
+**ImeChannelService** (`app_lib/tele_services`):
+- Handles all MethodChannel communication with native IME
+- Methods: `commitText()`, `backspace()`, `enter()`, `tab()`, `delete()`, `sendKeyEvent()`, `moveCursor()`
+- IME status: `isImeEnabled()`, `isImeActive()`, `openImeSettings()`
 
-### State Management
+**SettingsService** (`app_lib/tele_services`):
+- Persists settings via `shared_preferences`
+- Manages keyboard rotation, display preferences
 
-Uses `flutter_riverpod` v2:
-- `inputTextProvider`: StateNotifier for the text buffer on main screen
-- `displayControllerProvider`: Manages IPC receive port lifecycle
-- `keyboardServiceProvider`: Keyboard IPC sender
-- `appSettingsProvider`: App settings with persistence
-- `keyboardVisibleProvider`: Current keyboard visibility state
-- `shiftEnabledProvider`, `capsLockProvider`: Keyboard modifier state
+**CrashLogService** (`app_lib/tele_logging`):
+- File-based crash logs with 7-day retention
+- Accessed via MethodChannel from native crash handler
 
 ## Android Configuration
 
-- `minSdk = 26` required for multi-display support
-- `resizeableActivity="true"` in AndroidManifest for foldable devices
-- `windowSoftInputMode="adjustNothing"` to prevent system keyboard
-- `ToggleKeyboardReceiver` registered for external intent handling
+- `minSdk = 26` required for InputMethodService
+- `TeleDeckIMEService` registered in AndroidManifest as input method
+- `CrashHandler` captures Flutter engine crashes and logs them
+
+## Development Workflow
+
+1. Make changes to packages in `app_lib/`, `app_bloc/`, or `app_widget/`
+2. Run `melos bootstrap` if dependencies changed
+3. Run `melos run analyze` to check for issues
+4. Test with `flutter run` or `flutter build apk`
+
+## BLoC Patterns
+
+```dart
+// Reading state in widgets
+BlocBuilder<KeyboardBloc, KeyboardState>(
+  builder: (context, state) {
+    return KeyboardKey(
+      shiftActive: state.isShiftActive,
+    );
+  },
+)
+
+// Dispatching events
+context.read<KeyboardBloc>().add(KeyboardKeyPressed('a'));
+
+// Listening for state changes
+BlocListener<SettingsBloc, SettingsState>(
+  listener: (context, state) {
+    if (state.status == SettingsStatus.success) {
+      // Handle success
+    }
+  },
+)
+```
 
 ## Active Technologies
-- Dart 3.10+ / Kotlin (Android) + Flutter 3.10+, flutter_riverpod v2, shared_preferences (001-dual-screen-ime-entry)
-- shared_preferences for settings, file-based crash logs (7-day retention) (001-dual-screen-ime-entry)
 
-## Recent Changes
-- 001-dual-screen-ime-entry: Added Dart 3.10+ / Kotlin (Android) + Flutter 3.10+, flutter_riverpod v2, shared_preferences
+- Dart 3.8+ / Kotlin (Android) + Flutter 3.x
+- flutter_bloc v8.x for state management
+- Melos for monorepo management
+- shared_preferences for settings persistence
+- File-based crash logs (7-day retention)
