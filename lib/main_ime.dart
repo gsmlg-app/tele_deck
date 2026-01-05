@@ -10,7 +10,11 @@ import 'package:tele_theme/tele_theme.dart';
 /// IME entry point - called by TeleDeckIMEService via DartExecutor
 @pragma('vm:entry-point')
 void imeMain() {
+  // ignore: avoid_print
+  print('imeMain: Starting IME entry point');
   WidgetsFlutterBinding.ensureInitialized();
+  // ignore: avoid_print
+  print('imeMain: WidgetsFlutterBinding initialized');
 
   // Set system UI for immersive dark experience
   SystemChrome.setSystemUIOverlayStyle(
@@ -28,6 +32,8 @@ void imeMain() {
 
   final settingsService = SettingsService();
 
+  // ignore: avoid_print
+  print('imeMain: About to call runApp');
   runApp(
     MultiBlocProvider(
       providers: [
@@ -42,6 +48,8 @@ void imeMain() {
       child: TeleDeckKeyboardApp(imeChannelService: imeChannelService),
     ),
   );
+  // ignore: avoid_print
+  print('imeMain: runApp completed');
 }
 
 /// Keyboard app - renders on secondary display (or primary fallback) via IME Service
@@ -88,11 +96,15 @@ class _TeleDeckKeyboardAppState extends State<TeleDeckKeyboardApp> {
 
   @override
   Widget build(BuildContext context) {
+    // ignore: avoid_print
+    print('TeleDeckKeyboardApp: build() called');
     return MaterialApp(
       title: 'TeleDeck Keyboard',
       debugShowCheckedModeBanner: false,
       theme: TeleDeckTheme.darkTheme,
       builder: (context, child) {
+        // ignore: avoid_print
+        print('TeleDeckKeyboardApp: MaterialApp builder called');
         return MediaQuery(
           data: MediaQuery.of(context).copyWith(
             textScaler: TextScaler.noScaling,
@@ -102,6 +114,8 @@ class _TeleDeckKeyboardAppState extends State<TeleDeckKeyboardApp> {
       },
       home: BlocBuilder<SettingsBloc, SettingsState>(
         builder: (context, settingsState) {
+          // ignore: avoid_print
+          print('TeleDeckKeyboardApp: BlocBuilder building, status: ${settingsState.status}');
           final rotation = settingsState.status == SettingsStatus.success
               ? settingsState.settings.keyboardRotation
               : 0;

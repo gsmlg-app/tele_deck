@@ -8,6 +8,9 @@ import 'package:setup_bloc/setup_bloc.dart';
 import 'package:tele_services/tele_services.dart';
 import 'package:tele_theme/tele_theme.dart';
 
+// Export imeMain entry point to ensure it's included in the AOT build
+export 'main_ime.dart' show imeMain;
+
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
 

@@ -48,6 +48,11 @@
             android:name="flutterEmbedding"
             android:value="2" />
 
+        <!-- Disable Impeller to use Skia - helps with Presentation rendering -->
+        <meta-data
+            android:name="io.flutter.embedding.android.EnableImpeller"
+            android:value="false" />
+
         <!-- BroadcastReceiver for keyboard toggle actions -->
         <!-- Ayaneo Pocket DS can bind physical buttons to these actions -->
         <receiver

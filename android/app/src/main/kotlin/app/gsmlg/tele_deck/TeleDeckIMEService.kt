@@ -10,6 +10,7 @@ import android.util.Log
 import android.view.Display
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowManager
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import android.widget.FrameLayout
@@ -48,6 +49,7 @@ class TeleDeckIMEService : InputMethodService() {
     private var inputViewContainer: FrameLayout? = null
     private var isInPrimaryFallbackMode: Boolean = false
     private var isPrimaryViewAttached: Boolean = false
+    private var isDartEntrypointExecuted: Boolean = false
 
     // Handler for debouncing display events
     private val mainHandler = Handler(Looper.getMainLooper())
@@ -77,23 +79,35 @@ class TeleDeckIMEService : InputMethodService() {
         flutterEngine = FlutterEngineCache.getInstance().get(ENGINE_ID)
 
         if (flutterEngine == null) {
-            Log.d(TAG, "Creating new FlutterEngine with imeMain entrypoint")
+            Log.d(TAG, "Creating new FlutterEngine (Dart entrypoint will be executed when view is ready)")
             flutterEngine = FlutterEngine(this).apply {
-                // Execute the custom imeMain Dart entrypoint
-                val appBundlePath = FlutterInjector.instance().flutterLoader().findAppBundlePath()
-                dartExecutor.executeDartEntrypoint(
-                    DartExecutor.DartEntrypoint(appBundlePath, "imeMain")
-                )
-
                 // Cache the engine for reuse
                 FlutterEngineCache.getInstance().put(ENGINE_ID, this)
             }
+            isDartEntrypointExecuted = false
         } else {
             Log.d(TAG, "Using cached FlutterEngine")
+            isDartEntrypointExecuted = true
         }
 
         // Setup MethodChannel for receiving keyboard events from Flutter
         setupMethodChannel()
+    }
+
+    private fun executeDartEntrypointIfNeeded() {
+        if (isDartEntrypointExecuted) {
+            Log.d(TAG, "Dart entrypoint already executed")
+            return
+        }
+
+        val engine = flutterEngine ?: return
+
+        Log.d(TAG, "Executing Dart entrypoint: imeMain")
+        val appBundlePath = FlutterInjector.instance().flutterLoader().findAppBundlePath()
+        engine.dartExecutor.executeDartEntrypoint(
+            DartExecutor.DartEntrypoint(appBundlePath, "imeMain")
+        )
+        isDartEntrypointExecuted = true
     }
 
     private fun setupMethodChannel() {
@@ -254,6 +268,12 @@ class TeleDeckIMEService : InputMethodService() {
 
         inputViewContainer?.addView(primaryFlutterView)
 
+        // Execute Dart entrypoint now that view is ready
+        executeDartEntrypointIfNeeded()
+
+        // Notify Flutter lifecycle that app is resumed
+        engine.lifecycleChannel.appIsResumed()
+
         // Notify Flutter about primary fallback mode
         notifyDisplayModeChanged("primary_fallback", null)
 
@@ -374,13 +394,16 @@ class TeleDeckIMEService : InputMethodService() {
     }
 
     override fun onCreateInputView(): View {
+        Log.d(TAG, "======= onCreateInputView START =======")
         Log.d(TAG, "onCreateInputView - hasSecondaryDisplay: ${secondaryDisplay != null}")
+        Log.d(TAG, "onCreateInputView - secondaryDisplay ID: ${secondaryDisplay?.displayId}")
 
         return if (secondaryDisplay != null) {
-            // Secondary display exists - return 0-height view for primary screen
+            // Secondary display exists - return minimal view for primary screen
             // The actual keyboard is shown on the secondary display via Presentation
-            Log.d(TAG, "Using secondary display mode - returning 0-height view")
+            Log.d(TAG, "Using secondary display mode - returning minimal view")
             isInPrimaryFallbackMode = false
+            // Return a minimal 1dp view instead of 0-height to ensure onStartInputView is called
             createEmptyView()
         } else {
             // No secondary display - render keyboard on primary with 50% max height
@@ -389,22 +412,65 @@ class TeleDeckIMEService : InputMethodService() {
         }
     }
 
+    override fun onBindInput() {
+        super.onBindInput()
+        Log.d(TAG, "======= onBindInput =======")
+    }
+
+    override fun onWindowShown() {
+        super.onWindowShown()
+        Log.d(TAG, "======= onWindowShown =======")
+    }
+
+    /**
+     * Override to always show the keyboard when there's a secondary display.
+     * This is needed because we return a 0-height view on the primary screen,
+     * but Android might interpret that as "no keyboard needed".
+     */
+    override fun onShowInputRequested(flags: Int, configChange: Boolean): Boolean {
+        Log.d(TAG, "======= onShowInputRequested =======")
+        Log.d(TAG, "onShowInputRequested - flags: $flags, configChange: $configChange, hasSecondary: ${secondaryDisplay != null}")
+        // Always return true to ensure the keyboard is shown
+        // We'll display it on the secondary display via Presentation
+        return true
+    }
+
+    override fun onStartInput(attribute: EditorInfo?, restarting: Boolean) {
+        super.onStartInput(attribute, restarting)
+        Log.d(TAG, "======= onStartInput (no view) =======")
+        Log.d(TAG, "onStartInput - editorInfo: ${attribute?.packageName}, inputType: ${attribute?.inputType}")
+
+        // If we have a secondary display, request to show the keyboard explicitly
+        // This ensures onStartInputView gets called even with a 0-height primary view
+        if (secondaryDisplay != null && attribute?.inputType != 0) {
+            Log.d(TAG, "onStartInput - requesting keyboard show for secondary display")
+            requestShowSelf(0)
+        }
+    }
+
     override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
         super.onStartInputView(info, restarting)
+        Log.d(TAG, "======= onStartInputView START =======")
         Log.d(TAG, "onStartInputView - restarting: $restarting, primaryFallback: $isInPrimaryFallbackMode")
+        Log.d(TAG, "onStartInputView - secondaryDisplay: ${secondaryDisplay?.displayId}")
+        Log.d(TAG, "onStartInputView - presentation: ${presentation != null}")
+        Log.d(TAG, "onStartInputView - editorInfo: ${info?.packageName}, inputType: ${info?.inputType}")
 
         // Notify Flutter about input connection
         notifyFlutterConnectionStatus(true)
 
         if (isInPrimaryFallbackMode) {
             // In primary fallback mode - ensure FlutterView is attached
+            Log.d(TAG, "onStartInputView - using PRIMARY FALLBACK MODE")
             ensurePrimaryViewAttached()
             // Notify Flutter about primary fallback mode
             notifyDisplayModeChanged("primary_fallback", null)
         } else {
             // Show keyboard on secondary display if available
+            Log.d(TAG, "onStartInputView - showing keyboard on SECONDARY DISPLAY")
             showKeyboardPresentation()
         }
+        Log.d(TAG, "======= onStartInputView END =======")
     }
 
     /**
@@ -489,7 +555,26 @@ class TeleDeckIMEService : InputMethodService() {
         Log.d(TAG, "  Display valid: ${display.isValid}")
 
         try {
-            presentation = VirtualKeyboardPresentation(this, display, engine).apply {
+            // On Android 12+ (API 31), we need to create a WindowContext for the Presentation
+            // because InputMethodService context has window type TYPE_INPUT_METHOD (2037)
+            // but Presentation requires TYPE_PRESENTATION (2011)
+            val presentationContext: Context = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                Log.d(TAG, "Android 12+ detected, creating WindowContext for Presentation")
+                // TYPE_PRESENTATION = 2011
+                createDisplayContext(display).createWindowContext(
+                    2011,
+                    null
+                )
+            } else {
+                this
+            }
+
+            presentation = VirtualKeyboardPresentation(
+                presentationContext,
+                display,
+                engine,
+                onViewReady = { executeDartEntrypointIfNeeded() }
+            ).apply {
                 Log.d(TAG, "Calling presentation.show()")
                 show()
                 Log.d(TAG, "Presentation shown successfully, isShowing: $isShowing")
