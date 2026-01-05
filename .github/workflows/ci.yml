@@ -15,14 +15,11 @@ jobs:
 
       - uses: flutter-actions/setup-flutter@v4
 
-      - name: Install tools
-        run: dart pub global activate melos
-
       - name: Install dependencies
-        run: melos run prepare
+        run: flutter pub get
 
       - name: Analyze project source
-        run: melos run analyze
+        run: flutter analyze --no-fatal-infos
 
   build-android:
     runs-on: ubuntu-latest
