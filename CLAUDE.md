@@ -34,6 +34,27 @@ tele_deck/
 └── melos.yaml                        # Workspace configuration
 ```
 
+## Package Dependencies
+
+```
+tele_deck (root)
+├── tele_theme ────────────────────┐
+├── tele_models ───────────────────┤
+├── tele_services ─────────────────┤── app_lib (no internal deps)
+├── tele_logging ──────────────────┤
+└── tele_constants ────────────────┘
+        │
+        ▼
+├── keyboard_bloc ─── depends on: tele_services, tele_models, tele_constants
+├── settings_bloc ─── depends on: tele_services, tele_models
+└── setup_bloc ────── depends on: tele_services, tele_models
+        │
+        ▼
+├── keyboard_widgets ─ depends on: keyboard_bloc, tele_theme, tele_constants
+├── settings_widgets ─ depends on: settings_bloc, setup_bloc, tele_theme
+└── common_widgets ─── depends on: tele_logging, tele_theme
+```
+
 ## Build Commands
 
 ```bash
@@ -61,48 +82,106 @@ TeleDeck runs as a System Input Method Editor (IME) service:
 2. **IME Entry Point** (`lib/main_ime.dart`): Flutter keyboard UI, entry point `@pragma('vm:entry-point') void imeMain()`
 3. **Launcher App** (`lib/main.dart`): Setup guide and settings, run as a normal activity
 
+### Keyboard Layouts
+
+The keyboard supports multiple layouts defined in `KeyboardMode`:
+
+| Mode | Description | Rows |
+|------|-------------|------|
+| `standard` | Full QWERTY with function row | 6 rows (Fn, Numbers, QWERTY x3, Modifiers) |
+| `numpad` | Numeric keypad | 4x4 grid with operators |
+| `emoji` | Emoji picker | Category tabs + emoji grid |
+
+### Keyboard State (KeyboardBloc)
+
+```dart
+// State fields
+isConnected: bool           // IME connection status
+mode: KeyboardMode          // Current layout mode
+shiftEnabled: bool          // Shift key pressed
+shiftLocked: bool           // Shift lock (double-tap)
+capsLockEnabled: bool       // Caps lock on
+ctrlEnabled: bool           // Ctrl modifier
+altEnabled: bool            // Alt modifier
+superEnabled: bool          // Super/Windows key
+fnEnabled: bool             // Function key modifier
+displayMode: String         // Display mode from native
+showModeSelector: bool      // Mode selector overlay visible
+```
+
 ### MethodChannel Communication
 
-- `tele_deck/ime` - IME keyboard operations (commitText, backspace, enter, tab, etc.)
-- `app.gsmlg.tele_deck/settings` - Settings operations and IME status checks
-- `app.gsmlg.tele_deck/crash_logs` - Crash log operations
+- `tele_deck/ime` - IME keyboard operations
+  - `commitText(String)` - Insert text at cursor
+  - `backspace()` - Delete character before cursor
+  - `delete()` - Delete character after cursor
+  - `enter()` - Insert newline / submit
+  - `tab()` - Insert tab character
+  - `sendKeyEvent(keyCode, metaState)` - Send raw key event
+  - `moveCursor(offset)` - Move cursor position
+
+- `app.gsmlg.tele_deck/settings` - Settings and IME status
+  - `isImeEnabled()` - Check if TeleDeck IME is enabled
+  - `isImeActive()` - Check if TeleDeck is the active IME
+  - `openImeSettings()` - Open system IME settings
+
+- `app.gsmlg.tele_deck/crash_logs` - Crash logging
+  - `getCrashLogs()` - Retrieve stored crash logs
+  - `clearCrashLogs()` - Delete all crash logs
 
 ### State Management (BLoC)
 
 Uses `flutter_bloc` for state management:
 
 **KeyboardBloc** (`app_bloc/keyboard_bloc`):
-- Events: `KeyboardKeyPressed`, `KeyboardBackspacePressed`, `KeyboardEnterPressed`, `KeyboardShiftToggled`, `KeyboardCapsLockToggled`, `KeyboardModeChanged`, etc.
-- State: `isConnected`, `mode`, `shiftEnabled`, `shiftLocked`, `capsLockEnabled`, `ctrlEnabled`, `altEnabled`, `fnEnabled`, `displayMode`
+- Events: `KeyboardKeyPressed`, `KeyboardBackspacePressed`, `KeyboardEnterPressed`, `KeyboardShiftToggled`, `KeyboardShiftLocked`, `KeyboardCapsLockToggled`, `KeyboardCtrlToggled`, `KeyboardAltToggled`, `KeyboardFnToggled`, `KeyboardModeChanged`, `KeyboardConnectionChanged`
+- Handles all keyboard input and modifier state
 
 **SettingsBloc** (`app_bloc/settings_bloc`):
 - Events: `SettingsLoaded`, `SettingsKeyboardRotationChanged`, `SettingsPreferredDisplayChanged`
-- State: `SettingsState` with `status` (initial/loading/success/failure), `settings` (AppSettings)
+- State: `SettingsState` with `status` enum (initial/loading/success/failure)
 
 **SetupBloc** (`app_bloc/setup_bloc`):
 - Events: `SetupCheckRequested`, `SetupOpenImeSettings`, `SetupImeStatusChanged`
-- State: `SetupState` with `guideState` (currentStep, imeEnabled, imeActive, isComplete)
+- Manages the 3-step IME setup flow
 
 ### Key Services
 
 **ImeChannelService** (`app_lib/tele_services`):
-- Handles all MethodChannel communication with native IME
-- Methods: `commitText()`, `backspace()`, `enter()`, `tab()`, `delete()`, `sendKeyEvent()`, `moveCursor()`
-- IME status: `isImeEnabled()`, `isImeActive()`, `openImeSettings()`
+- Singleton service for IME MethodChannel communication
+- Callbacks: `onConnectionStatusChanged`, `onDisplayModeChanged`
+- Methods mirror native IME capabilities
 
 **SettingsService** (`app_lib/tele_services`):
-- Persists settings via `shared_preferences`
-- Manages keyboard rotation, display preferences
+- Persists `AppSettings` via `shared_preferences`
+- Settings: `keyboardRotation`, `showKeyboardOnStartup`, `preferredDisplayIndex`
 
 **CrashLogService** (`app_lib/tele_logging`):
-- File-based crash logs with 7-day retention
-- Accessed via MethodChannel from native crash handler
+- File-based crash logs in app documents directory
+- Automatic 7-day retention cleanup
+- JSON format with timestamp, error type, message, stack trace
+
+## Android Native Code
+
+### TeleDeckIMEService.kt
+
+The main IME service that:
+- Extends `InputMethodService`
+- Hosts Flutter via `FlutterEngine` with entry point `imeMain`
+- Handles display detection for dual-screen devices
+- Communicates with Flutter via MethodChannel
+
+### CrashHandler.kt
+
+- Catches uncaught exceptions in native code
+- Logs crashes to file storage
+- Shows notification to view crash logs
 
 ## Android Configuration
 
-- `minSdk = 26` required for InputMethodService
+- `minSdk = 26` required for InputMethodService features
 - `TeleDeckIMEService` registered in AndroidManifest as input method
-- `CrashHandler` captures Flutter engine crashes and logs them
+- `CrashHandler` initialized on app start
 
 ## Development Workflow
 
@@ -134,6 +213,31 @@ BlocListener<SettingsBloc, SettingsState>(
     }
   },
 )
+
+// Combined builder + listener
+BlocConsumer<SetupBloc, SetupState>(
+  listener: (context, state) {
+    if (state.shouldNavigateToSettings) {
+      // Navigate
+    }
+  },
+  builder: (context, state) {
+    return SetupGuideView(state: state.guideState);
+  },
+)
+```
+
+## Theme Constants
+
+```dart
+// Colors (from tele_theme/TeleDeckColors)
+darkBackground     = 0xFF0D0D0D   // Main background
+secondaryBackground = 0xFF1A1A2E  // Card/panel background
+neonCyan           = 0xFF00F5FF   // Primary accent
+neonMagenta        = 0xFFFF00FF   // Secondary accent
+neonPurple         = 0xFF9D00FF   // Tertiary accent
+textPrimary        = 0xFFE0E0E0   // Primary text
+textSecondary      = 0xFFA0A0A0   // Secondary text
 ```
 
 ## Active Technologies
@@ -143,3 +247,4 @@ BlocListener<SettingsBloc, SettingsState>(
 - Melos for monorepo management
 - shared_preferences for settings persistence
 - File-based crash logs (7-day retention)
+- google_fonts for typography (JetBrains Mono, Roboto Mono)
