@@ -174,6 +174,32 @@ The main IME service that:
 - Handles display detection for dual-screen devices
 - Communicates with Flutter via MethodChannel
 
+### VirtualKeyboardPresentation.kt
+
+Renders the keyboard on secondary displays using Android's Presentation API:
+- Creates a separate window on the secondary display
+- Attaches a FlutterView to the shared FlutterEngine
+- Does NOT use `TYPE_INPUT_METHOD` (only valid for primary display)
+
+### Dual-Display Architecture
+
+The IME operates in two modes based on available displays:
+
+| Mode | Trigger | Primary Screen | Secondary Screen |
+|------|---------|----------------|------------------|
+| `secondary` | Secondary display detected | 0-height empty view | Full keyboard via Presentation |
+| `primary_fallback` | No secondary display | 50% height keyboard | N/A |
+
+**Key state flags** in `TeleDeckIMEService`:
+- `isInPrimaryFallbackMode` - Currently rendering on primary screen
+- `isPrimaryViewAttached` - FlutterView attached to engine (for view reuse)
+- `secondaryDisplay` - Reference to detected secondary display (null if none)
+
+**Display mode switching**:
+- `handleDisplayAdded()` - Cleans up primary view, switches to Presentation
+- `handleDisplayRemoved()` - Dismisses Presentation, switches to primary fallback
+- Events are debounced (500ms) to handle rapid connect/disconnect
+
 ### CrashHandler.kt
 
 - Catches uncaught exceptions in native code
@@ -192,6 +218,24 @@ The main IME service that:
 2. Run `melos bootstrap` if dependencies changed
 3. Run `melos run analyze` to check for issues
 4. Test with `flutter run` or `flutter build apk`
+
+## Debugging
+
+```bash
+# Watch IME and Presentation logs
+adb logcat -s TeleDeckIME:D VirtualKeyboardPresentation:D
+
+# Watch all TeleDeck logs
+adb logcat | grep -E "(TeleDeck|tele_deck)"
+
+# Check if secondary display is detected
+adb shell dumpsys display | grep -A5 "Display Devices"
+```
+
+**Common issues**:
+- "2rem black bar" on primary = Presentation not showing on secondary (check display detection logs)
+- Keyboard not appearing after hide = FlutterView detached prematurely (check `isPrimaryViewAttached`)
+- Crash on display disconnect = Race condition (debounce should handle this)
 
 ## BLoC Patterns
 
