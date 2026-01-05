@@ -1,17 +1,17 @@
 <!--
   Sync Impact Report
   ==================
-  Version change: 0.0.0 → 1.0.0
+  Version change: 1.0.0 → 1.1.0
 
-  Modified principles: N/A (initial constitution)
+  Modified principles:
+  - Platform Requirements: Updated state management from Riverpod to BLoC
+  - Platform Requirements: Added Melos monorepo architecture
 
   Added sections:
-  - Core Principles (5 principles)
-  - Platform Requirements
-  - Development Workflow
-  - Governance
+  - Monorepo Architecture (new principle VI)
+  - Package structure details
 
-  Removed sections: N/A (initial constitution)
+  Removed sections: None
 
   Templates requiring updates:
   - .specify/templates/plan-template.md - ✅ No changes needed (generic template)
@@ -41,8 +41,8 @@ TeleDeck operates as a System-Level Input Method Service (IME), not a standalone
 
 The keyboard UI MUST maintain its distinctive Cyberpunk visual identity.
 
-- Color scheme: Dark background (`0xFF0D1117`), neon cyan (`0xFF00D9FF`), neon magenta (`0xFFFF006E`)
-- Typography: Monospace fonts (Roboto Mono) with letter-spacing
+- Color scheme: Dark background (`0xFF0D0D0D`), neon cyan (`0xFF00F5FF`), neon magenta (`0xFFFF00FF`)
+- Typography: Monospace fonts (JetBrains Mono, Roboto Mono) with letter-spacing
 - Visual effects: Glow animations, gradient borders, pulsing indicators
 - Key styling: Rounded corners with neon border highlights on press/active states
 
@@ -83,17 +83,58 @@ The virtual keyboard MUST provide full input capability.
 
 **Rationale**: TeleDeck replaces the system keyboard entirely; incomplete functionality forces users back to alternatives.
 
+### VI. Monorepo Architecture
+
+TeleDeck MUST maintain a Melos-managed monorepo structure with clear package boundaries.
+
+- Package categories MUST be organized as:
+  - `app_lib/` - Core library packages (theme, models, services, logging, constants)
+  - `app_bloc/` - BLoC state management packages (keyboard_bloc, settings_bloc, setup_bloc)
+  - `app_widget/` - UI component packages (keyboard_widgets, settings_widgets, common_widgets)
+- Entry points (`lib/main.dart`, `lib/main_ime.dart`) MUST only bootstrap and wire packages
+- Packages MUST have explicit dependencies declared in their `pubspec.yaml`
+- Cross-package imports MUST follow the dependency hierarchy: app_lib → app_bloc → app_widget
+- State management MUST use flutter_bloc for all user-facing state
+
+**Rationale**: Monorepo architecture enables better separation of concerns, faster incremental builds, and clearer ownership boundaries for each feature domain.
+
 ## Platform Requirements
 
 **Target**: Android 8.0+ (API 26+) with secondary display support
 
 **Technology Stack**:
-- Framework: Flutter 3.10+ / Dart 3.0+
-- State Management: flutter_riverpod v2
+- Framework: Flutter 3.x / Dart 3.8+
+- State Management: flutter_bloc v8.x (BLoC pattern)
+- Workspace: Melos for monorepo management
 - Native: Kotlin (InputMethodService, Presentation API)
 - Persistence: shared_preferences (cross-engine compatible)
+- Typography: google_fonts (JetBrains Mono, Roboto Mono)
+
+**Package Structure**:
+```
+tele_deck/
+├── lib/                    # Entry points only
+│   ├── main.dart           # Launcher app (settings/setup)
+│   └── main_ime.dart       # IME keyboard entry point
+├── app_lib/                # Core library packages
+│   ├── tele_theme/         # TeleDeckColors, TeleDeckTheme
+│   ├── tele_models/        # AppSettings, DisplayState, SetupGuideState
+│   ├── tele_services/      # SettingsService, ImeChannelService
+│   ├── tele_logging/       # CrashLogEntry, CrashLogService
+│   └── tele_constants/     # IPC constants, KeyboardLayout, DisplayMode
+├── app_bloc/               # BLoC state management
+│   ├── keyboard_bloc/      # Keyboard state (modifiers, mode, connection)
+│   ├── settings_bloc/      # Settings persistence
+│   └── setup_bloc/         # IME onboarding flow
+├── app_widget/             # UI components
+│   ├── keyboard_widgets/   # KeyboardView, KeyboardKey, layouts
+│   ├── settings_widgets/   # SettingsView, SetupGuideView
+│   └── common_widgets/     # CrashLogViewer, shared widgets
+└── android/                # Native Kotlin code
+```
 
 **Build Verification**:
+- `melos bootstrap` MUST succeed for workspace setup
 - `flutter analyze` MUST pass with no errors (warnings/info acceptable)
 - `flutter build apk --debug` MUST succeed before any PR merge
 - Kotlin code MUST compile without errors
@@ -103,12 +144,13 @@ The virtual keyboard MUST provide full input capability.
 ### Code Review Requirements
 
 - All PRs MUST verify IME functionality on a device with secondary display (emulator acceptable for layout-only changes)
-- Changes to `TeleDeckIMEService.kt` or `VirtualKeyboardPresentation.kt` require manual testing
-- Keyboard rotation settings MUST be tested when modifying `keyboard_view.dart`
+- Changes to `TeleDeckIMEService.kt` require manual testing
+- Keyboard rotation settings MUST be tested when modifying keyboard_widgets
+- BLoC changes MUST include verification that state transitions work correctly
 
 ### Testing Gates
 
-- Unit tests: Optional but encouraged for pure Dart logic
+- Unit tests: Optional but encouraged for BLoC logic and pure Dart functions
 - Integration tests: Required for MethodChannel communication changes
 - Manual validation: Required for any UI/UX changes visible to users
 
@@ -116,6 +158,7 @@ The virtual keyboard MUST provide full input capability.
 
 - Use semantic commit messages: `feat:`, `fix:`, `refactor:`, `docs:`
 - Reference relevant principles if architectural decisions are made
+- Package-specific changes should mention package name: `feat(keyboard_bloc):`
 
 ## Governance
 
@@ -134,4 +177,4 @@ This Constitution supersedes all other practices for TeleDeck development.
 - All PRs MUST be reviewed against applicable principles
 - Violations require explicit justification in Complexity Tracking (see plan-template.md)
 
-**Version**: 1.0.0 | **Ratified**: 2025-01-05 | **Last Amended**: 2025-01-05
+**Version**: 1.1.0 | **Ratified**: 2025-01-05 | **Last Amended**: 2025-01-05
