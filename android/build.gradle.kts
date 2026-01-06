@@ -2,6 +2,9 @@ allprojects {
     repositories {
         google()
         mavenCentral()
+        // Fallback mirrors for when Maven Central rate limits
+        maven { url = uri("https://maven.aliyun.com/repository/public") }
+        gradlePluginPortal()
     }
 }
 
