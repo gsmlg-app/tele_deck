@@ -177,9 +177,12 @@ The main IME service that:
 ### VirtualKeyboardPresentation.kt
 
 Renders the keyboard on secondary displays using Android's Presentation API:
-- Creates a separate window on the secondary display
-- Attaches a FlutterView to the shared FlutterEngine
+- Creates a **local FlutterEngine** for the Presentation's display context (not shared)
+- Uses `FLAG_NOT_FOCUSABLE | FLAG_NOT_TOUCH_MODAL` to prevent stealing focus from primary display
 - Does NOT use `TYPE_INPUT_METHOD` (only valid for primary display)
+- On Android 12+, uses `createWindowContext(TYPE_PRESENTATION)` for proper context
+
+**Why local FlutterEngine**: FlutterEngine rendering is tied to its creation context. A shared engine created in IME service context cannot render properly on a different display's context.
 
 ### Dual-Display Architecture
 
@@ -187,18 +190,29 @@ The IME operates in two modes based on available displays:
 
 | Mode | Trigger | Primary Screen | Secondary Screen |
 |------|---------|----------------|------------------|
-| `secondary` | Secondary display detected | 0-height empty view | Full keyboard via Presentation |
+| `secondary` | Secondary display detected | 0-height empty view | Full keyboard via Presentation (local engine) |
 | `primary_fallback` | No secondary display | 50% height keyboard | N/A |
 
 **Key state flags** in `TeleDeckIMEService`:
 - `isInPrimaryFallbackMode` - Currently rendering on primary screen
 - `isPrimaryViewAttached` - FlutterView attached to engine (for view reuse)
+- `isDartEntrypointExecuted` - Dart code started (deferred until view ready)
 - `secondaryDisplay` - Reference to detected secondary display (null if none)
+
+**FlutterEngine lifecycle**:
+- Primary mode: Engine created in `initFlutterEngine()`, Dart entrypoint executed when FlutterView attaches
+- Secondary mode: Local engine created in `VirtualKeyboardPresentation`, Dart entrypoint executed on view attach
+- MethodChannel set up via `onEngineReady` callback after Presentation's engine is ready
 
 **Display mode switching**:
 - `handleDisplayAdded()` - Cleans up primary view, switches to Presentation
 - `handleDisplayRemoved()` - Dismisses Presentation, switches to primary fallback
 - Events are debounced (500ms) to handle rapid connect/disconnect
+
+**Focus management** (critical for secondary display IME):
+- `FLAG_NOT_FOCUSABLE` - Key events go to primary display app, not keyboard
+- `FLAG_NOT_TOUCH_MODAL` - Touch events outside keyboard pass through
+- Without these flags, touching keyboard steals focus → `onFinishInputView` → keyboard disappears
 
 ### CrashHandler.kt
 
@@ -233,7 +247,10 @@ adb shell dumpsys display | grep -A5 "Display Devices"
 ```
 
 **Common issues**:
-- "2rem black bar" on primary = Presentation not showing on secondary (check display detection logs)
+- "Black bar" on primary, no keyboard on secondary = Check Presentation logs, verify `FLAG_NOT_FOCUSABLE` set
+- Keyboard disappears when touched = Missing focus flags, keyboard stealing focus from primary app
+- No input from keyboard = MethodChannel not set up on local engine (check `onEngineReady` callback)
+- Blank keyboard on secondary = Dart entrypoint not executed or lifecycle not resumed
 - Keyboard not appearing after hide = FlutterView detached prematurely (check `isPrimaryViewAttached`)
 - Crash on display disconnect = Race condition (debounce should handle this)
 
