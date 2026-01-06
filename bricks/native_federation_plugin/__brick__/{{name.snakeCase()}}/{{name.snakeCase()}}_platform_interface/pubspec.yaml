@@ -1,0 +1,19 @@
+name: {{package_prefix.snakeCase()}}_{{name.snakeCase()}}_platform_interface
+description: Platform interface for {{package_prefix.snakeCase()}}_{{name.snakeCase()}}
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.5.0
+  flutter: ^3.24.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  plugin_platform_interface: ^2.1.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  mockito: ^5.4.4

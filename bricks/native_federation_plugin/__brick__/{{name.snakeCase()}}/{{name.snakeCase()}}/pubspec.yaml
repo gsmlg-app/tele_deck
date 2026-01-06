@@ -1,0 +1,27 @@
+name: {{package_prefix.snakeCase()}}_{{name.snakeCase()}}
+description: {{description}}
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.5.0
+  flutter: ^3.24.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  {{package_prefix.snakeCase()}}_{{name.snakeCase()}}_platform_interface: any
+{{#support_android}}  {{package_prefix.snakeCase()}}_{{name.snakeCase()}}_android: any
+{{/support_android}}{{#support_ios}}  {{package_prefix.snakeCase()}}_{{name.snakeCase()}}_ios: any
+{{/support_ios}}{{#support_linux}}  {{package_prefix.snakeCase()}}_{{name.snakeCase()}}_linux: any
+{{/support_linux}}{{#support_macos}}  {{package_prefix.snakeCase()}}_{{name.snakeCase()}}_macos: any
+{{/support_macos}}{{#support_windows}}  {{package_prefix.snakeCase()}}_{{name.snakeCase()}}_windows: any
+{{/support_windows}}{{#support_web}}  {{package_prefix.snakeCase()}}_{{name.snakeCase()}}_web: any
+{{/support_web}}
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  mockito: ^5.4.4
+  build_runner: ^2.4.9

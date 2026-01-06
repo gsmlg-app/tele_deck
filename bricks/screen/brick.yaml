@@ -28,12 +28,6 @@ vars:
     default: Profile
     prompt: What is your screen name?
 
-  folder:
-    type: string
-    description: Subfolder name (optional, e.g., 'user' for lib/screens/user/)
-    default: ""
-    prompt: Subfolder name (leave empty for root screens folder)?
-
   has_adaptive_scaffold:
     type: boolean
     description: Use AppAdaptiveScaffold for responsive layout

@@ -1,0 +1,59 @@
+name: native_plugin
+description: A simple native plugin template (non-federated) with platform-specific implementations
+version: 0.1.0+1
+
+environment:
+  mason: ^0.1.1
+
+vars:
+  name:
+    type: string
+    description: The plugin name (e.g., battery_monitor, device_info)
+    prompt: What is the plugin name?
+
+  description:
+    type: string
+    description: A short description of the plugin
+    prompt: What is the plugin description?
+
+  package_prefix:
+    type: string
+    description: The package name prefix (e.g., app)
+    default: app
+    prompt: What is the package prefix?
+
+  author:
+    type: string
+    description: The author name
+    default: GSMLG Team
+    prompt: Who is the author?
+
+  support_android:
+    type: boolean
+    description: Include Android platform support
+    default: true
+
+  support_ios:
+    type: boolean
+    description: Include iOS platform support
+    default: true
+
+  support_linux:
+    type: boolean
+    description: Include Linux platform support
+    default: true
+
+  support_macos:
+    type: boolean
+    description: Include macOS platform support
+    default: true
+
+  support_windows:
+    type: boolean
+    description: Include Windows platform support
+    default: true
+
+  support_web:
+    type: boolean
+    description: Include Web platform support
+    default: false
