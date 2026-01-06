@@ -12,10 +12,7 @@ import 'mode_selector_overlay.dart';
 class KeyboardView extends StatelessWidget {
   final int rotation;
 
-  const KeyboardView({
-    super.key,
-    this.rotation = 0,
-  });
+  const KeyboardView({super.key, this.rotation = 0});
 
   @override
   Widget build(BuildContext context) {
@@ -28,10 +25,12 @@ class KeyboardView extends StatelessWidget {
             final bool isRotated90or270 = rotation == 1 || rotation == 3;
 
             // For 90/270 rotation, build content for swapped dimensions
-            final contentWidth =
-                isRotated90or270 ? constraints.maxHeight : constraints.maxWidth;
-            final contentHeight =
-                isRotated90or270 ? constraints.maxWidth : constraints.maxHeight;
+            final contentWidth = isRotated90or270
+                ? constraints.maxHeight
+                : constraints.maxWidth;
+            final contentHeight = isRotated90or270
+                ? constraints.maxWidth
+                : constraints.maxHeight;
 
             // Build layout based on content dimensions
             final isPortrait = contentHeight > contentWidth;
@@ -81,8 +80,9 @@ class _KeyboardHeader extends StatelessWidget {
           decoration: BoxDecoration(
             border: Border(
               bottom: BorderSide(
-                color: const Color(TeleDeckColors.neonMagenta)
-                    .withValues(alpha: 0.3),
+                color: const Color(
+                  TeleDeckColors.neonMagenta,
+                ).withValues(alpha: 0.3),
                 width: 1,
               ),
             ),
@@ -96,16 +96,18 @@ class _KeyboardHeader extends StatelessWidget {
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
                     border: Border.all(
-                      color: const Color(TeleDeckColors.textPrimary)
-                          .withValues(alpha: 0.3),
+                      color: const Color(
+                        TeleDeckColors.textPrimary,
+                      ).withValues(alpha: 0.3),
                       width: 1,
                     ),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Icon(
                     Icons.settings,
-                    color: const Color(TeleDeckColors.textPrimary)
-                        .withValues(alpha: 0.7),
+                    color: const Color(
+                      TeleDeckColors.textPrimary,
+                    ).withValues(alpha: 0.7),
                     size: 16,
                   ),
                 ),
@@ -132,8 +134,10 @@ class _KeyboardHeader extends StatelessWidget {
               const Spacer(),
               // Connection indicator
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   border: Border.all(
                     color: state.isConnected
@@ -156,10 +160,11 @@ class _KeyboardHeader extends StatelessWidget {
                             : Colors.red,
                         boxShadow: [
                           BoxShadow(
-                            color: (state.isConnected
-                                    ? const Color(TeleDeckColors.neonCyan)
-                                    : Colors.red)
-                                .withValues(alpha: 0.5),
+                            color:
+                                (state.isConnected
+                                        ? const Color(TeleDeckColors.neonCyan)
+                                        : Colors.red)
+                                    .withValues(alpha: 0.5),
                             blurRadius: 4,
                           ),
                         ],
@@ -270,18 +275,21 @@ class _StandardLayout extends StatelessWidget {
           child: Column(
             children: [
               Expanded(child: _FunctionRow(fnEnabled: state.fnEnabled)),
-              Expanded(
-                  child: _NumberRow(isShifted: state.shiftEnabled)),
+              Expanded(child: _NumberRow(isShifted: state.shiftEnabled)),
               Expanded(child: _QwertyRow(isUpperCase: isUpperCase)),
               Expanded(
-                  child: _AsdfRow(
-                      isUpperCase: isUpperCase,
-                      isCapsLock: state.capsLockEnabled)),
+                child: _AsdfRow(
+                  isUpperCase: isUpperCase,
+                  isCapsLock: state.capsLockEnabled,
+                ),
+              ),
               Expanded(
-                  child: _ZxcvRow(
-                      isUpperCase: isUpperCase,
-                      isShiftEnabled: state.shiftEnabled,
-                      isShiftLocked: state.shiftLocked)),
+                child: _ZxcvRow(
+                  isUpperCase: isUpperCase,
+                  isShiftEnabled: state.shiftEnabled,
+                  isShiftLocked: state.shiftLocked,
+                ),
+              ),
               Expanded(child: _ModifierRow(state: state)),
             ],
           ),
@@ -323,7 +331,9 @@ class _FunctionRow extends StatelessWidget {
             label: key,
             onTap: () => bloc.add(KeyboardFunctionKeyPressed(num)),
             isSpecial: true,
-            accentColor: fnEnabled ? const Color(TeleDeckColors.neonCyan) : null,
+            accentColor: fnEnabled
+                ? const Color(TeleDeckColors.neonCyan)
+                : null,
           );
         }
         return KeyboardKey(label: key, onTap: () {});
@@ -339,8 +349,19 @@ class _NumberRow extends StatelessWidget {
   const _NumberRow({required this.isShifted});
 
   static const _numberSymbolMap = {
-    '`': '~', '1': '!', '2': '@', '3': '#', '4': '\$', '5': '%',
-    '6': '^', '7': '&', '8': '*', '9': '(', '0': ')', '-': '_', '=': '+',
+    '`': '~',
+    '1': '!',
+    '2': '@',
+    '3': '#',
+    '4': '\$',
+    '5': '%',
+    '6': '^',
+    '7': '&',
+    '8': '*',
+    '9': '(',
+    '0': ')',
+    '-': '_',
+    '=': '+',
   };
 
   @override
@@ -394,7 +415,9 @@ class _QwertyRow extends StatelessWidget {
           );
         }
         if (key.length == 1 && key.toUpperCase() != key.toLowerCase()) {
-          final displayKey = isUpperCase ? key.toUpperCase() : key.toLowerCase();
+          final displayKey = isUpperCase
+              ? key.toUpperCase()
+              : key.toLowerCase();
           return KeyboardKey(
             label: key,
             displayLabel: displayKey,
@@ -430,8 +453,9 @@ class _AsdfRow extends StatelessWidget {
             onTap: () => bloc.add(KeyboardCapsLockToggled(!isCapsLock)),
             flex: KeyboardLayout.keyFlex['CAPS'] ?? 1.0,
             isSpecial: true,
-            accentColor:
-                isCapsLock ? const Color(TeleDeckColors.neonMagenta) : null,
+            accentColor: isCapsLock
+                ? const Color(TeleDeckColors.neonMagenta)
+                : null,
           );
         } else if (key == 'ENTER') {
           return KeyboardKey(
@@ -444,7 +468,9 @@ class _AsdfRow extends StatelessWidget {
           );
         }
         if (key.length == 1 && key.toUpperCase() != key.toLowerCase()) {
-          final displayKey = isUpperCase ? key.toUpperCase() : key.toLowerCase();
+          final displayKey = isUpperCase
+              ? key.toUpperCase()
+              : key.toLowerCase();
           return KeyboardKey(
             label: key,
             displayLabel: displayKey,
@@ -496,7 +522,9 @@ class _ZxcvRow extends StatelessWidget {
           );
         }
         if (key.length == 1 && key.toUpperCase() != key.toLowerCase()) {
-          final displayKey = isUpperCase ? key.toUpperCase() : key.toLowerCase();
+          final displayKey = isUpperCase
+              ? key.toUpperCase()
+              : key.toLowerCase();
           return KeyboardKey(
             label: key,
             displayLabel: displayKey,
@@ -639,17 +667,22 @@ class _NumpadLayout extends StatelessWidget {
                   child: Row(
                     children: [
                       KeyboardKey(
-                          label: 'Ins',
-                          onTap: () => bloc.add(const KeyboardKeyPressed('Insert')),
-                          isSpecial: true),
+                        label: 'Ins',
+                        onTap: () =>
+                            bloc.add(const KeyboardKeyPressed('Insert')),
+                        isSpecial: true,
+                      ),
                       KeyboardKey(
-                          label: 'Home',
-                          onTap: () => bloc.add(const KeyboardKeyPressed('Home')),
-                          isSpecial: true),
+                        label: 'Home',
+                        onTap: () => bloc.add(const KeyboardKeyPressed('Home')),
+                        isSpecial: true,
+                      ),
                       KeyboardKey(
-                          label: 'PgUp',
-                          onTap: () => bloc.add(const KeyboardKeyPressed('PageUp')),
-                          isSpecial: true),
+                        label: 'PgUp',
+                        onTap: () =>
+                            bloc.add(const KeyboardKeyPressed('PageUp')),
+                        isSpecial: true,
+                      ),
                     ],
                   ),
                 ),
@@ -657,17 +690,21 @@ class _NumpadLayout extends StatelessWidget {
                   child: Row(
                     children: [
                       KeyboardKey(
-                          label: 'Del',
-                          onTap: () => bloc.add(const KeyboardDeletePressed()),
-                          isSpecial: true),
+                        label: 'Del',
+                        onTap: () => bloc.add(const KeyboardDeletePressed()),
+                        isSpecial: true,
+                      ),
                       KeyboardKey(
-                          label: 'End',
-                          onTap: () => bloc.add(const KeyboardKeyPressed('End')),
-                          isSpecial: true),
+                        label: 'End',
+                        onTap: () => bloc.add(const KeyboardKeyPressed('End')),
+                        isSpecial: true,
+                      ),
                       KeyboardKey(
-                          label: 'PgDn',
-                          onTap: () => bloc.add(const KeyboardKeyPressed('PageDown')),
-                          isSpecial: true),
+                        label: 'PgDn',
+                        onTap: () =>
+                            bloc.add(const KeyboardKeyPressed('PageDown')),
+                        isSpecial: true,
+                      ),
                     ],
                   ),
                 ),
@@ -676,11 +713,13 @@ class _NumpadLayout extends StatelessWidget {
                     children: [
                       const Spacer(),
                       KeyboardKey(
-                          label: 'Up',
-                          icon: Icons.arrow_upward,
-                          onTap: () => bloc
-                              .add(const KeyboardArrowKeyPressed(ArrowDirection.up)),
-                          isSpecial: true),
+                        label: 'Up',
+                        icon: Icons.arrow_upward,
+                        onTap: () => bloc.add(
+                          const KeyboardArrowKeyPressed(ArrowDirection.up),
+                        ),
+                        isSpecial: true,
+                      ),
                       const Spacer(),
                     ],
                   ),
@@ -689,23 +728,29 @@ class _NumpadLayout extends StatelessWidget {
                   child: Row(
                     children: [
                       KeyboardKey(
-                          label: 'Left',
-                          icon: Icons.arrow_back,
-                          onTap: () => bloc
-                              .add(const KeyboardArrowKeyPressed(ArrowDirection.left)),
-                          isSpecial: true),
+                        label: 'Left',
+                        icon: Icons.arrow_back,
+                        onTap: () => bloc.add(
+                          const KeyboardArrowKeyPressed(ArrowDirection.left),
+                        ),
+                        isSpecial: true,
+                      ),
                       KeyboardKey(
-                          label: 'Down',
-                          icon: Icons.arrow_downward,
-                          onTap: () => bloc
-                              .add(const KeyboardArrowKeyPressed(ArrowDirection.down)),
-                          isSpecial: true),
+                        label: 'Down',
+                        icon: Icons.arrow_downward,
+                        onTap: () => bloc.add(
+                          const KeyboardArrowKeyPressed(ArrowDirection.down),
+                        ),
+                        isSpecial: true,
+                      ),
                       KeyboardKey(
-                          label: 'Right',
-                          icon: Icons.arrow_forward,
-                          onTap: () => bloc.add(
-                              const KeyboardArrowKeyPressed(ArrowDirection.right)),
-                          isSpecial: true),
+                        label: 'Right',
+                        icon: Icons.arrow_forward,
+                        onTap: () => bloc.add(
+                          const KeyboardArrowKeyPressed(ArrowDirection.right),
+                        ),
+                        isSpecial: true,
+                      ),
                     ],
                   ),
                 ),
@@ -720,17 +765,19 @@ class _NumpadLayout extends StatelessWidget {
                 Expanded(
                   child: Row(
                     children: [
+                      KeyboardKey(label: 'Num', onTap: () {}, isSpecial: true),
                       KeyboardKey(
-                          label: 'Num', onTap: () {}, isSpecial: true),
+                        label: '/',
+                        onTap: () => bloc.add(const KeyboardKeyPressed('/')),
+                      ),
                       KeyboardKey(
-                          label: '/',
-                          onTap: () => bloc.add(const KeyboardKeyPressed('/'))),
+                        label: '*',
+                        onTap: () => bloc.add(const KeyboardKeyPressed('*')),
+                      ),
                       KeyboardKey(
-                          label: '*',
-                          onTap: () => bloc.add(const KeyboardKeyPressed('*'))),
-                      KeyboardKey(
-                          label: '-',
-                          onTap: () => bloc.add(const KeyboardKeyPressed('-'))),
+                        label: '-',
+                        onTap: () => bloc.add(const KeyboardKeyPressed('-')),
+                      ),
                     ],
                   ),
                 ),
@@ -738,17 +785,21 @@ class _NumpadLayout extends StatelessWidget {
                   child: Row(
                     children: [
                       KeyboardKey(
-                          label: '7',
-                          onTap: () => bloc.add(const KeyboardKeyPressed('7'))),
+                        label: '7',
+                        onTap: () => bloc.add(const KeyboardKeyPressed('7')),
+                      ),
                       KeyboardKey(
-                          label: '8',
-                          onTap: () => bloc.add(const KeyboardKeyPressed('8'))),
+                        label: '8',
+                        onTap: () => bloc.add(const KeyboardKeyPressed('8')),
+                      ),
                       KeyboardKey(
-                          label: '9',
-                          onTap: () => bloc.add(const KeyboardKeyPressed('9'))),
+                        label: '9',
+                        onTap: () => bloc.add(const KeyboardKeyPressed('9')),
+                      ),
                       KeyboardKey(
-                          label: '+',
-                          onTap: () => bloc.add(const KeyboardKeyPressed('+'))),
+                        label: '+',
+                        onTap: () => bloc.add(const KeyboardKeyPressed('+')),
+                      ),
                     ],
                   ),
                 ),
@@ -756,14 +807,17 @@ class _NumpadLayout extends StatelessWidget {
                   child: Row(
                     children: [
                       KeyboardKey(
-                          label: '4',
-                          onTap: () => bloc.add(const KeyboardKeyPressed('4'))),
+                        label: '4',
+                        onTap: () => bloc.add(const KeyboardKeyPressed('4')),
+                      ),
                       KeyboardKey(
-                          label: '5',
-                          onTap: () => bloc.add(const KeyboardKeyPressed('5'))),
+                        label: '5',
+                        onTap: () => bloc.add(const KeyboardKeyPressed('5')),
+                      ),
                       KeyboardKey(
-                          label: '6',
-                          onTap: () => bloc.add(const KeyboardKeyPressed('6'))),
+                        label: '6',
+                        onTap: () => bloc.add(const KeyboardKeyPressed('6')),
+                      ),
                       const Spacer(),
                     ],
                   ),
@@ -772,20 +826,24 @@ class _NumpadLayout extends StatelessWidget {
                   child: Row(
                     children: [
                       KeyboardKey(
-                          label: '1',
-                          onTap: () => bloc.add(const KeyboardKeyPressed('1'))),
+                        label: '1',
+                        onTap: () => bloc.add(const KeyboardKeyPressed('1')),
+                      ),
                       KeyboardKey(
-                          label: '2',
-                          onTap: () => bloc.add(const KeyboardKeyPressed('2'))),
+                        label: '2',
+                        onTap: () => bloc.add(const KeyboardKeyPressed('2')),
+                      ),
                       KeyboardKey(
-                          label: '3',
-                          onTap: () => bloc.add(const KeyboardKeyPressed('3'))),
+                        label: '3',
+                        onTap: () => bloc.add(const KeyboardKeyPressed('3')),
+                      ),
                       KeyboardKey(
-                          label: 'Enter',
-                          icon: Icons.keyboard_return,
-                          onTap: () => bloc.add(const KeyboardEnterPressed()),
-                          isSpecial: true,
-                          accentColor: const Color(TeleDeckColors.neonCyan)),
+                        label: 'Enter',
+                        icon: Icons.keyboard_return,
+                        onTap: () => bloc.add(const KeyboardEnterPressed()),
+                        isSpecial: true,
+                        accentColor: const Color(TeleDeckColors.neonCyan),
+                      ),
                     ],
                   ),
                 ),
@@ -793,18 +851,22 @@ class _NumpadLayout extends StatelessWidget {
                   child: Row(
                     children: [
                       KeyboardKey(
-                          label: '0',
-                          onTap: () => bloc.add(const KeyboardKeyPressed('0')),
-                          flex: 2),
+                        label: '0',
+                        onTap: () => bloc.add(const KeyboardKeyPressed('0')),
+                        flex: 2,
+                      ),
                       KeyboardKey(
-                          label: '.',
-                          onTap: () => bloc.add(const KeyboardKeyPressed('.'))),
+                        label: '.',
+                        onTap: () => bloc.add(const KeyboardKeyPressed('.')),
+                      ),
                       KeyboardKey(
-                          label: 'ABC',
-                          onTap: () => bloc
-                              .add(const KeyboardModeChanged(KeyboardMode.standard)),
-                          isSpecial: true,
-                          accentColor: const Color(TeleDeckColors.neonMagenta)),
+                        label: 'ABC',
+                        onTap: () => bloc.add(
+                          const KeyboardModeChanged(KeyboardMode.standard),
+                        ),
+                        isSpecial: true,
+                        accentColor: const Color(TeleDeckColors.neonMagenta),
+                      ),
                     ],
                   ),
                 ),
@@ -822,13 +884,45 @@ class _EmojiLayout extends StatelessWidget {
   const _EmojiLayout();
 
   static const _emojis = [
-    '\u{1F600}', '\u{1F603}', '\u{1F604}', '\u{1F601}', '\u{1F605}', '\u{1F602}',
-    '\u{1F923}', '\u{1F60A}', '\u{1F607}', '\u{1F642}', '\u{1F609}', '\u{1F60C}',
-    '\u{1F60D}', '\u{1F970}', '\u{1F618}', '\u{1F617}', '\u{1F619}', '\u{1F61A}',
-    '\u{1F44D}', '\u{1F44E}', '\u{1F44C}', '\u{270C}\u{FE0F}', '\u{1F91E}',
-    '\u{1F91F}', '\u{1F918}', '\u{1F919}', '\u{1F44B}', '\u{1F590}\u{FE0F}',
-    '\u{2764}\u{FE0F}', '\u{1F9E1}', '\u{1F49B}', '\u{1F49A}', '\u{1F499}',
-    '\u{1F49C}', '\u{1F5A4}', '\u{1F90D}', '\u{1F494}', '\u{1F495}', '\u{1F496}',
+    '\u{1F600}',
+    '\u{1F603}',
+    '\u{1F604}',
+    '\u{1F601}',
+    '\u{1F605}',
+    '\u{1F602}',
+    '\u{1F923}',
+    '\u{1F60A}',
+    '\u{1F607}',
+    '\u{1F642}',
+    '\u{1F609}',
+    '\u{1F60C}',
+    '\u{1F60D}',
+    '\u{1F970}',
+    '\u{1F618}',
+    '\u{1F617}',
+    '\u{1F619}',
+    '\u{1F61A}',
+    '\u{1F44D}',
+    '\u{1F44E}',
+    '\u{1F44C}',
+    '\u{270C}\u{FE0F}',
+    '\u{1F91E}',
+    '\u{1F91F}',
+    '\u{1F918}',
+    '\u{1F919}',
+    '\u{1F44B}',
+    '\u{1F590}\u{FE0F}',
+    '\u{2764}\u{FE0F}',
+    '\u{1F9E1}',
+    '\u{1F49B}',
+    '\u{1F49A}',
+    '\u{1F499}',
+    '\u{1F49C}',
+    '\u{1F5A4}',
+    '\u{1F90D}',
+    '\u{1F494}',
+    '\u{1F495}',
+    '\u{1F496}',
   ];
 
   @override
@@ -857,8 +951,9 @@ class _EmojiLayout extends StatelessWidget {
                       color: const Color(TeleDeckColors.keySurface),
                       borderRadius: BorderRadius.circular(6),
                       border: Border.all(
-                        color: const Color(TeleDeckColors.neonCyan)
-                            .withValues(alpha: 0.3),
+                        color: const Color(
+                          TeleDeckColors.neonCyan,
+                        ).withValues(alpha: 0.3),
                       ),
                     ),
                     child: Center(
@@ -877,8 +972,9 @@ class _EmojiLayout extends StatelessWidget {
               children: [
                 KeyboardKey(
                   label: 'ABC',
-                  onTap: () =>
-                      bloc.add(const KeyboardModeChanged(KeyboardMode.standard)),
+                  onTap: () => bloc.add(
+                    const KeyboardModeChanged(KeyboardMode.standard),
+                  ),
                   isSpecial: true,
                   accentColor: const Color(TeleDeckColors.neonMagenta),
                   flex: 1.5,
@@ -941,8 +1037,9 @@ class _NumberSymbolKey extends StatelessWidget {
               color: const Color(TeleDeckColors.keySurface),
               borderRadius: BorderRadius.circular(6),
               border: Border.all(
-                color:
-                    const Color(TeleDeckColors.neonCyan).withValues(alpha: 0.3),
+                color: const Color(
+                  TeleDeckColors.neonCyan,
+                ).withValues(alpha: 0.3),
                 width: 1,
               ),
             ),
@@ -956,8 +1053,9 @@ class _NumberSymbolKey extends StatelessWidget {
                     fontWeight: FontWeight.w500,
                     color: isShifted
                         ? const Color(TeleDeckColors.neonMagenta)
-                        : const Color(TeleDeckColors.textPrimary)
-                            .withValues(alpha: 0.5),
+                        : const Color(
+                            TeleDeckColors.textPrimary,
+                          ).withValues(alpha: 0.5),
                   ),
                 ),
                 Text(
@@ -966,8 +1064,9 @@ class _NumberSymbolKey extends StatelessWidget {
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                     color: isShifted
-                        ? const Color(TeleDeckColors.textPrimary)
-                            .withValues(alpha: 0.5)
+                        ? const Color(
+                            TeleDeckColors.textPrimary,
+                          ).withValues(alpha: 0.5)
                         : const Color(TeleDeckColors.textPrimary),
                   ),
                 ),
@@ -1019,8 +1118,9 @@ class _ShiftKey extends StatelessWidget {
               color: const Color(TeleDeckColors.keySurface),
               borderRadius: BorderRadius.circular(6),
               border: Border.all(
-                color: accentColor
-                    .withValues(alpha: (isEnabled || isLocked) ? 0.8 : 0.3),
+                color: accentColor.withValues(
+                  alpha: (isEnabled || isLocked) ? 0.8 : 0.3,
+                ),
                 width: isLocked ? 2 : 1,
               ),
               boxShadow: (isEnabled || isLocked)
@@ -1118,8 +1218,9 @@ class _FnKey extends StatelessWidget {
                 ),
                 Icon(
                   Icons.settings,
-                  color: const Color(TeleDeckColors.textPrimary)
-                      .withValues(alpha: 0.3),
+                  color: const Color(
+                    TeleDeckColors.textPrimary,
+                  ).withValues(alpha: 0.3),
                   size: 10,
                 ),
               ],

@@ -104,13 +104,15 @@ class EditorInfo {
   }
 
   /// Check if this is a password field
-  bool get isPassword => (inputType & 0x80) != 0; // TYPE_TEXT_VARIATION_PASSWORD
+  bool get isPassword =>
+      (inputType & 0x80) != 0; // TYPE_TEXT_VARIATION_PASSWORD
 
   /// Check if this is a numeric field
   bool get isNumeric => (inputType & 0x02) != 0; // TYPE_CLASS_NUMBER
 
   /// Check if this is a multiline field
-  bool get isMultiline => (inputType & 0x20000) != 0; // TYPE_TEXT_FLAG_MULTI_LINE
+  bool get isMultiline =>
+      (inputType & 0x20000) != 0; // TYPE_TEXT_FLAG_MULTI_LINE
 
   @override
   String toString() {

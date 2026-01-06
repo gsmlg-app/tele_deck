@@ -56,8 +56,10 @@ class AppSettings extends Equatable {
     int? keyboardRotation,
   }) {
     return AppSettings(
-      showKeyboardOnStartup: showKeyboardOnStartup ?? this.showKeyboardOnStartup,
-      preferredDisplayIndex: preferredDisplayIndex ?? this.preferredDisplayIndex,
+      showKeyboardOnStartup:
+          showKeyboardOnStartup ?? this.showKeyboardOnStartup,
+      preferredDisplayIndex:
+          preferredDisplayIndex ?? this.preferredDisplayIndex,
       rememberLastState: rememberLastState ?? this.rememberLastState,
       lastVisibilityState: lastVisibilityState ?? this.lastVisibilityState,
       keyboardRotation: keyboardRotation ?? this.keyboardRotation,
@@ -74,10 +76,10 @@ class AppSettings extends Equatable {
 
   @override
   List<Object?> get props => [
-        showKeyboardOnStartup,
-        preferredDisplayIndex,
-        rememberLastState,
-        lastVisibilityState,
-        keyboardRotation,
-      ];
+    showKeyboardOnStartup,
+    preferredDisplayIndex,
+    rememberLastState,
+    lastVisibilityState,
+    keyboardRotation,
+  ];
 }

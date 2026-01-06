@@ -118,7 +118,9 @@ class ImeChannelService {
   /// Get current connection status
   Future<bool> getConnectionStatus() async {
     try {
-      final result = await _channel.invokeMethod<bool>(ImeMethod.getConnectionStatus);
+      final result = await _channel.invokeMethod<bool>(
+        ImeMethod.getConnectionStatus,
+      );
       return result ?? false;
     } catch (e) {
       debugPrint('Failed to get connection status: $e');
@@ -175,7 +177,10 @@ class ImeChannelService {
   /// Get crash log detail by ID
   Future<Map<String, dynamic>?> getCrashLogDetail(String id) async {
     try {
-      final result = await _channel.invokeMethod<Map>(ImeMethod.getCrashLogDetail, id);
+      final result = await _channel.invokeMethod<Map>(
+        ImeMethod.getCrashLogDetail,
+        id,
+      );
       return result?.cast<String, dynamic>();
     } catch (e) {
       debugPrint('Failed to get crash log detail: $e');
@@ -186,7 +191,9 @@ class ImeChannelService {
   /// Clear all crash logs
   Future<bool> clearCrashLogs() async {
     try {
-      final result = await _channel.invokeMethod<bool>(ImeMethod.clearCrashLogs);
+      final result = await _channel.invokeMethod<bool>(
+        ImeMethod.clearCrashLogs,
+      );
       return result ?? false;
     } catch (e) {
       debugPrint('Failed to clear crash logs: $e');

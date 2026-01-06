@@ -22,9 +22,7 @@ class TeleDeckTheme {
         onSecondary: Color(TeleDeckColors.darkBackground),
         onSurface: Color(TeleDeckColors.textPrimary),
       ),
-      textTheme: GoogleFonts.jetBrainsMonoTextTheme(
-        ThemeData.dark().textTheme,
-      ),
+      textTheme: GoogleFonts.jetBrainsMonoTextTheme(ThemeData.dark().textTheme),
       appBarTheme: const AppBarTheme(
         backgroundColor: Color(TeleDeckColors.darkBackground),
         foregroundColor: Color(TeleDeckColors.textPrimary),
@@ -40,9 +38,7 @@ class TeleDeckTheme {
           foregroundColor: const Color(TeleDeckColors.darkBackground),
         ),
       ),
-      iconTheme: const IconThemeData(
-        color: Color(TeleDeckColors.neonCyan),
-      ),
+      iconTheme: const IconThemeData(color: Color(TeleDeckColors.neonCyan)),
     );
   }
 }

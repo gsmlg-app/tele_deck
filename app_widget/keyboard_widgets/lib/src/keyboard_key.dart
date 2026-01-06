@@ -40,9 +40,10 @@ class _KeyboardKeyState extends State<KeyboardKey>
       duration: const Duration(milliseconds: 150),
       vsync: this,
     );
-    _glowAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _glowController, curve: Curves.easeOut),
-    );
+    _glowAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _glowController, curve: Curves.easeOut));
   }
 
   @override
@@ -69,7 +70,8 @@ class _KeyboardKeyState extends State<KeyboardKey>
 
   @override
   Widget build(BuildContext context) {
-    final accentColor = widget.accentColor ?? const Color(TeleDeckColors.neonCyan);
+    final accentColor =
+        widget.accentColor ?? const Color(TeleDeckColors.neonCyan);
 
     return Expanded(
       flex: (widget.flex * 10).toInt(),

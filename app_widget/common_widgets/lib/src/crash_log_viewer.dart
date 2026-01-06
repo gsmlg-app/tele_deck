@@ -102,13 +102,18 @@ class _CrashLogViewerState extends State<CrashLogViewer> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh, color: Color(TeleDeckColors.neonCyan)),
+            icon: const Icon(
+              Icons.refresh,
+              color: Color(TeleDeckColors.neonCyan),
+            ),
             onPressed: _loadLogs,
           ),
           if (_logs.isNotEmpty)
             IconButton(
-              icon: const Icon(Icons.delete_outline,
-                  color: Color(TeleDeckColors.neonMagenta)),
+              icon: const Icon(
+                Icons.delete_outline,
+                color: Color(TeleDeckColors.neonMagenta),
+              ),
               onPressed: _clearLogs,
             ),
         ],
@@ -120,39 +125,41 @@ class _CrashLogViewerState extends State<CrashLogViewer> {
               ),
             )
           : _logs.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.check_circle_outline,
-                        size: 64,
-                        color: const Color(TeleDeckColors.neonCyan)
-                            .withValues(alpha: 0.5),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'No crash logs',
-                        style: GoogleFonts.robotoMono(
-                          fontSize: 16,
-                          color: const Color(TeleDeckColors.textPrimary)
-                              .withValues(alpha: 0.7),
-                        ),
-                      ),
-                    ],
+          ? Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.check_circle_outline,
+                    size: 64,
+                    color: const Color(
+                      TeleDeckColors.neonCyan,
+                    ).withValues(alpha: 0.5),
                   ),
-                )
-              : ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: _logs.length,
-                  itemBuilder: (context, index) {
-                    final log = _logs[index];
-                    return _CrashLogCard(
-                      log: log,
-                      onTap: () => _showLogDetail(log),
-                    );
-                  },
-                ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No crash logs',
+                    style: GoogleFonts.robotoMono(
+                      fontSize: 16,
+                      color: const Color(
+                        TeleDeckColors.textPrimary,
+                      ).withValues(alpha: 0.7),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          : ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: _logs.length,
+              itemBuilder: (context, index) {
+                final log = _logs[index];
+                return _CrashLogCard(
+                  log: log,
+                  onTap: () => _showLogDetail(log),
+                );
+              },
+            ),
     );
   }
 
@@ -191,8 +198,10 @@ class _CrashLogViewerState extends State<CrashLogViewer> {
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close,
-                        color: Color(TeleDeckColors.textPrimary)),
+                    icon: const Icon(
+                      Icons.close,
+                      color: Color(TeleDeckColors.textPrimary),
+                    ),
                     onPressed: () => Navigator.pop(context),
                   ),
                 ],
@@ -226,8 +235,9 @@ class _CrashLogViewerState extends State<CrashLogViewer> {
                       log.stackTrace,
                       style: GoogleFonts.robotoMono(
                         fontSize: 10,
-                        color: const Color(TeleDeckColors.textPrimary)
-                            .withValues(alpha: 0.8),
+                        color: const Color(
+                          TeleDeckColors.textPrimary,
+                        ).withValues(alpha: 0.8),
                       ),
                     ),
                   ),
@@ -280,8 +290,9 @@ class _CrashLogCard extends StatelessWidget {
                   ),
                   Icon(
                     Icons.chevron_right,
-                    color: const Color(TeleDeckColors.neonCyan)
-                        .withValues(alpha: 0.5),
+                    color: const Color(
+                      TeleDeckColors.neonCyan,
+                    ).withValues(alpha: 0.5),
                   ),
                 ],
               ),
@@ -292,8 +303,9 @@ class _CrashLogCard extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: GoogleFonts.robotoMono(
                   fontSize: 12,
-                  color: const Color(TeleDeckColors.textPrimary)
-                      .withValues(alpha: 0.7),
+                  color: const Color(
+                    TeleDeckColors.textPrimary,
+                  ).withValues(alpha: 0.7),
                 ),
               ),
               const SizedBox(height: 8),
@@ -301,8 +313,9 @@ class _CrashLogCard extends StatelessWidget {
                 log.formattedTimestamp,
                 style: GoogleFonts.robotoMono(
                   fontSize: 10,
-                  color: const Color(TeleDeckColors.neonCyan)
-                      .withValues(alpha: 0.7),
+                  color: const Color(
+                    TeleDeckColors.neonCyan,
+                  ).withValues(alpha: 0.7),
                 ),
               ),
             ],

@@ -9,10 +9,7 @@ import 'package:tele_theme/tele_theme.dart';
 class SettingsView extends StatelessWidget {
   final VoidCallback? onViewCrashLogs;
 
-  const SettingsView({
-    super.key,
-    this.onViewCrashLogs,
-  });
+  const SettingsView({super.key, this.onViewCrashLogs});
 
   @override
   Widget build(BuildContext context) {
@@ -81,8 +78,9 @@ class SettingsView extends StatelessWidget {
               'Bind these actions to physical buttons on your device.',
               style: GoogleFonts.robotoMono(
                 fontSize: 12,
-                color: const Color(TeleDeckColors.textPrimary)
-                    .withValues(alpha: 0.6),
+                color: const Color(
+                  TeleDeckColors.textPrimary,
+                ).withValues(alpha: 0.6),
               ),
             ),
           ),
@@ -180,13 +178,19 @@ class SettingsView extends StatelessWidget {
               border: Border.all(
                 color: isHighlighted
                     ? const Color(TeleDeckColors.neonCyan)
-                    : const Color(TeleDeckColors.neonCyan).withValues(alpha: 0.2),
+                    : const Color(
+                        TeleDeckColors.neonCyan,
+                      ).withValues(alpha: 0.2),
                 width: isHighlighted ? 2 : 1,
               ),
             ),
             child: Row(
               children: [
-                Icon(icon, color: const Color(TeleDeckColors.neonCyan), size: 24),
+                Icon(
+                  icon,
+                  color: const Color(TeleDeckColors.neonCyan),
+                  size: 24,
+                ),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Column(
@@ -204,8 +208,9 @@ class SettingsView extends StatelessWidget {
                         subtitle,
                         style: GoogleFonts.robotoMono(
                           fontSize: 11,
-                          color: const Color(TeleDeckColors.textPrimary)
-                              .withValues(alpha: 0.6),
+                          color: const Color(
+                            TeleDeckColors.textPrimary,
+                          ).withValues(alpha: 0.6),
                         ),
                       ),
                     ],
@@ -213,7 +218,9 @@ class SettingsView extends StatelessWidget {
                 ),
                 Icon(
                   Icons.arrow_forward_ios,
-                  color: const Color(TeleDeckColors.neonCyan).withValues(alpha: 0.5),
+                  color: const Color(
+                    TeleDeckColors.neonCyan,
+                  ).withValues(alpha: 0.5),
                   size: 16,
                 ),
               ],
@@ -239,13 +246,13 @@ class _IMEStatusCard extends StatelessWidget {
         final status = isSelected
             ? 'Active'
             : isEnabled
-                ? 'Enabled (not selected)'
-                : 'Not Enabled';
+            ? 'Enabled (not selected)'
+            : 'Not Enabled';
         final statusColor = isSelected
             ? Colors.green
             : isEnabled
-                ? Colors.orange
-                : Colors.red;
+            ? Colors.orange
+            : Colors.red;
 
         return Container(
           padding: const EdgeInsets.all(16),
@@ -269,8 +276,8 @@ class _IMEStatusCard extends StatelessWidget {
                   isSelected
                       ? Icons.check_circle
                       : isEnabled
-                          ? Icons.warning
-                          : Icons.error,
+                      ? Icons.warning
+                      : Icons.error,
                   color: statusColor,
                   size: 32,
                 ),
@@ -384,13 +391,19 @@ class _ActionButton extends StatelessWidget {
               border: Border.all(
                 color: isHighlighted
                     ? const Color(TeleDeckColors.neonCyan)
-                    : const Color(TeleDeckColors.neonCyan).withValues(alpha: 0.2),
+                    : const Color(
+                        TeleDeckColors.neonCyan,
+                      ).withValues(alpha: 0.2),
                 width: isHighlighted ? 2 : 1,
               ),
             ),
             child: Row(
               children: [
-                Icon(icon, color: const Color(TeleDeckColors.neonCyan), size: 24),
+                Icon(
+                  icon,
+                  color: const Color(TeleDeckColors.neonCyan),
+                  size: 24,
+                ),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Column(
@@ -408,8 +421,9 @@ class _ActionButton extends StatelessWidget {
                         subtitle,
                         style: GoogleFonts.robotoMono(
                           fontSize: 11,
-                          color: const Color(TeleDeckColors.textPrimary)
-                              .withValues(alpha: 0.6),
+                          color: const Color(
+                            TeleDeckColors.textPrimary,
+                          ).withValues(alpha: 0.6),
                         ),
                       ),
                     ],
@@ -417,7 +431,9 @@ class _ActionButton extends StatelessWidget {
                 ),
                 Icon(
                   Icons.arrow_forward_ios,
-                  color: const Color(TeleDeckColors.neonCyan).withValues(alpha: 0.5),
+                  color: const Color(
+                    TeleDeckColors.neonCyan,
+                  ).withValues(alpha: 0.5),
                   size: 16,
                 ),
               ],
@@ -448,7 +464,9 @@ class _RotationSetting extends StatelessWidget {
             color: const Color(TeleDeckColors.secondaryBackground),
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
-              color: const Color(TeleDeckColors.neonCyan).withValues(alpha: 0.2),
+              color: const Color(
+                TeleDeckColors.neonCyan,
+              ).withValues(alpha: 0.2),
               width: 1,
             ),
           ),
@@ -464,24 +482,29 @@ class _RotationSetting extends StatelessWidget {
               _getRotationLabel(rotation),
               style: GoogleFonts.robotoMono(
                 fontSize: 11,
-                color: const Color(TeleDeckColors.textPrimary)
-                    .withValues(alpha: 0.6),
+                color: const Color(
+                  TeleDeckColors.textPrimary,
+                ).withValues(alpha: 0.6),
               ),
             ),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 IconButton(
-                  icon: const Icon(Icons.rotate_left,
-                      color: Color(TeleDeckColors.neonCyan)),
+                  icon: const Icon(
+                    Icons.rotate_left,
+                    color: Color(TeleDeckColors.neonCyan),
+                  ),
                   onPressed: () {
                     final newRotation = (rotation - 1 + 4) % 4;
                     bloc.add(SettingsKeyboardRotationChanged(newRotation));
                   },
                 ),
                 IconButton(
-                  icon: const Icon(Icons.rotate_right,
-                      color: Color(TeleDeckColors.neonCyan)),
+                  icon: const Icon(
+                    Icons.rotate_right,
+                    color: Color(TeleDeckColors.neonCyan),
+                  ),
                   onPressed: () {
                     final newRotation = (rotation + 1) % 4;
                     bloc.add(SettingsKeyboardRotationChanged(newRotation));

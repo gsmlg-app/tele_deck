@@ -244,8 +244,8 @@ class TeleImeKeyboard {
   /// Get the current editor info
   Future<EditorInfo?> getEditorInfo() async {
     try {
-      final result = await _channel
-          .invokeMethod<Map<dynamic, dynamic>>('getEditorInfo');
+      final result =
+          await _channel.invokeMethod<Map<dynamic, dynamic>>('getEditorInfo');
       if (result == null) return null;
       return EditorInfo.fromMap(result);
     } on PlatformException catch (e) {

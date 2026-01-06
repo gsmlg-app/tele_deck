@@ -8,10 +8,9 @@ import 'settings_state.dart';
 class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
   final SettingsService _settingsService;
 
-  SettingsBloc({
-    required SettingsService settingsService,
-  })  : _settingsService = settingsService,
-        super(SettingsState.initial()) {
+  SettingsBloc({required SettingsService settingsService})
+    : _settingsService = settingsService,
+      super(SettingsState.initial()) {
     on<SettingsLoaded>(_onLoaded);
     on<SettingsKeyboardRotationChanged>(_onKeyboardRotationChanged);
     on<SettingsShowKeyboardOnStartupChanged>(_onShowKeyboardOnStartupChanged);
@@ -28,15 +27,14 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
 
     try {
       final settings = await _settingsService.loadSettings();
-      emit(state.copyWith(
-        status: SettingsStatus.success,
-        settings: settings,
-      ));
+      emit(state.copyWith(status: SettingsStatus.success, settings: settings));
     } catch (e) {
-      emit(state.copyWith(
-        status: SettingsStatus.failure,
-        errorMessage: e.toString(),
-      ));
+      emit(
+        state.copyWith(
+          status: SettingsStatus.failure,
+          errorMessage: e.toString(),
+        ),
+      );
     }
   }
 

@@ -8,10 +8,7 @@ import 'package:tele_theme/tele_theme.dart';
 class SetupGuideView extends StatelessWidget {
   final VoidCallback? onComplete;
 
-  const SetupGuideView({
-    super.key,
-    this.onComplete,
-  });
+  const SetupGuideView({super.key, this.onComplete});
 
   @override
   Widget build(BuildContext context) {
@@ -23,7 +20,9 @@ class SetupGuideView extends StatelessWidget {
             color: const Color(TeleDeckColors.secondaryBackground),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: const Color(TeleDeckColors.neonCyan).withValues(alpha: 0.3),
+              color: const Color(
+                TeleDeckColors.neonCyan,
+              ).withValues(alpha: 0.3),
               width: 1,
             ),
           ),
@@ -114,7 +113,9 @@ class SetupGuideView extends StatelessWidget {
           description,
           style: GoogleFonts.robotoMono(
             fontSize: 14,
-            color: const Color(TeleDeckColors.textPrimary).withValues(alpha: 0.7),
+            color: const Color(
+              TeleDeckColors.textPrimary,
+            ).withValues(alpha: 0.7),
           ),
         ),
         const SizedBox(height: 24),
@@ -152,7 +153,9 @@ class _StepDot extends StatelessWidget {
         boxShadow: isCurrent
             ? [
                 BoxShadow(
-                  color: const Color(TeleDeckColors.neonCyan).withValues(alpha: 0.5),
+                  color: const Color(
+                    TeleDeckColors.neonCyan,
+                  ).withValues(alpha: 0.5),
                   blurRadius: 8,
                   spreadRadius: 1,
                 ),

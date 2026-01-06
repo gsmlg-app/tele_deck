@@ -13,7 +13,9 @@ class ModeSelectorOverlay extends StatelessWidget {
     return BlocBuilder<KeyboardBloc, KeyboardState>(
       builder: (context, state) {
         return Container(
-          color: const Color(TeleDeckColors.darkBackground).withValues(alpha: 0.95),
+          color: const Color(
+            TeleDeckColors.darkBackground,
+          ).withValues(alpha: 0.95),
           child: Center(
             child: Container(
               padding: const EdgeInsets.all(24),
@@ -22,12 +24,16 @@ class ModeSelectorOverlay extends StatelessWidget {
                 color: const Color(TeleDeckColors.secondaryBackground),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: const Color(TeleDeckColors.neonCyan).withValues(alpha: 0.5),
+                  color: const Color(
+                    TeleDeckColors.neonCyan,
+                  ).withValues(alpha: 0.5),
                   width: 1,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(TeleDeckColors.neonCyan).withValues(alpha: 0.2),
+                    color: const Color(
+                      TeleDeckColors.neonCyan,
+                    ).withValues(alpha: 0.2),
                     blurRadius: 20,
                     spreadRadius: 2,
                   ),
@@ -76,11 +82,14 @@ class ModeSelectorOverlay extends StatelessWidget {
                   GestureDetector(
                     onTap: () {
                       context.read<KeyboardBloc>().add(
-                            const KeyboardModeSelectorChanged(false),
-                          );
+                        const KeyboardModeSelectorChanged(false),
+                      );
                     },
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 32,
+                        vertical: 12,
+                      ),
                       decoration: BoxDecoration(
                         border: Border.all(
                           color: const Color(TeleDeckColors.neonMagenta),
@@ -144,7 +153,9 @@ class _ModeButton extends StatelessWidget {
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: const Color(TeleDeckColors.neonCyan).withValues(alpha: 0.3),
+                    color: const Color(
+                      TeleDeckColors.neonCyan,
+                    ).withValues(alpha: 0.3),
                     blurRadius: 8,
                     spreadRadius: 1,
                   ),

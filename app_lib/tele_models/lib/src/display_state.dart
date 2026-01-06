@@ -88,7 +88,9 @@ class DisplayState extends Equatable {
 
   /// Get the active display dimensions (secondary if available, otherwise primary)
   (int width, int height) get activeDisplaySize {
-    if (hasSecondaryDisplay && secondaryWidth != null && secondaryHeight != null) {
+    if (hasSecondaryDisplay &&
+        secondaryWidth != null &&
+        secondaryHeight != null) {
       return (secondaryWidth!, secondaryHeight!);
     }
     return (primaryWidth, primaryHeight);
@@ -96,13 +98,13 @@ class DisplayState extends Equatable {
 
   @override
   List<Object?> get props => [
-        hasSecondaryDisplay,
-        secondaryDisplayId,
-        primaryWidth,
-        primaryHeight,
-        secondaryWidth,
-        secondaryHeight,
-      ];
+    hasSecondaryDisplay,
+    secondaryDisplayId,
+    primaryWidth,
+    primaryHeight,
+    secondaryWidth,
+    secondaryHeight,
+  ];
 
   @override
   String toString() {

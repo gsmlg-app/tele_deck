@@ -4,37 +4,121 @@ class KeyboardLayout {
 
   /// Function key row (ESC + F1-F12 + Delete)
   static const List<String> functionRow = [
-    'ESC', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12', 'DEL',
+    'ESC',
+    'F1',
+    'F2',
+    'F3',
+    'F4',
+    'F5',
+    'F6',
+    'F7',
+    'F8',
+    'F9',
+    'F10',
+    'F11',
+    'F12',
+    'DEL',
   ];
 
   /// Number row (with tilde/backtick)
   static const List<String> numberRow = [
-    '`', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', 'BACKSPACE',
+    '`',
+    '1',
+    '2',
+    '3',
+    '4',
+    '5',
+    '6',
+    '7',
+    '8',
+    '9',
+    '0',
+    '-',
+    '=',
+    'BACKSPACE',
   ];
 
   /// Symbol row (shifted number keys)
   static const List<String> symbolRow = [
-    '~', '!', '@', '#', '\$', '%', '^', '&', '*', '(', ')', '_', '+', 'BACKSPACE',
+    '~',
+    '!',
+    '@',
+    '#',
+    '\$',
+    '%',
+    '^',
+    '&',
+    '*',
+    '(',
+    ')',
+    '_',
+    '+',
+    'BACKSPACE',
   ];
 
   /// QWERTY row (Tab + letters + brackets + backslash)
   static const List<String> qwertyRow = [
-    'TAB', 'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '[', ']', '\\',
+    'TAB',
+    'Q',
+    'W',
+    'E',
+    'R',
+    'T',
+    'Y',
+    'U',
+    'I',
+    'O',
+    'P',
+    '[',
+    ']',
+    '\\',
   ];
 
   /// ASDF row (CapsLock + letters + semicolon + quote + Enter)
   static const List<String> asdfRow = [
-    'CAPS', 'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', ';', "'", 'ENTER',
+    'CAPS',
+    'A',
+    'S',
+    'D',
+    'F',
+    'G',
+    'H',
+    'J',
+    'K',
+    'L',
+    ';',
+    "'",
+    'ENTER',
   ];
 
   /// ZXCV row (Shift + letters + comma + period + slash + Shift)
   static const List<String> zxcvRow = [
-    'SHIFT', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', ',', '.', '/', 'SHIFT',
+    'SHIFT',
+    'Z',
+    'X',
+    'C',
+    'V',
+    'B',
+    'N',
+    'M',
+    ',',
+    '.',
+    '/',
+    'SHIFT',
   ];
 
   /// Bottom row (modifiers + space + arrows)
   static const List<String> modifierRow = [
-    'CTRL', 'ALT', 'SUPER', 'SPACE', 'FN', 'ALT', 'LEFT', 'UP', 'DOWN', 'RIGHT',
+    'CTRL',
+    'ALT',
+    'SUPER',
+    'SPACE',
+    'FN',
+    'ALT',
+    'LEFT',
+    'UP',
+    'DOWN',
+    'RIGHT',
   ];
 
   /// All rows in order (for iteration)

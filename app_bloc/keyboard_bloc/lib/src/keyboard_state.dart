@@ -91,16 +91,16 @@ class KeyboardState extends Equatable {
 
   @override
   List<Object?> get props => [
-        isConnected,
-        mode,
-        showModeSelector,
-        shiftEnabled,
-        shiftLocked,
-        capsLockEnabled,
-        ctrlEnabled,
-        altEnabled,
-        superEnabled,
-        fnEnabled,
-        displayMode,
-      ];
+    isConnected,
+    mode,
+    showModeSelector,
+    shiftEnabled,
+    shiftLocked,
+    capsLockEnabled,
+    ctrlEnabled,
+    altEnabled,
+    superEnabled,
+    fnEnabled,
+    displayMode,
+  ];
 }

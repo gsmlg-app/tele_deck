@@ -8,10 +8,9 @@ import 'keyboard_state.dart';
 class KeyboardBloc extends Bloc<KeyboardEvent, KeyboardState> {
   final ImeChannelService _imeService;
 
-  KeyboardBloc({
-    required ImeChannelService imeService,
-  })  : _imeService = imeService,
-        super(KeyboardState.initial()) {
+  KeyboardBloc({required ImeChannelService imeService})
+    : _imeService = imeService,
+      super(KeyboardState.initial()) {
     // Register event handlers
     on<KeyboardKeyPressed>(_onKeyPressed);
     on<KeyboardBackspacePressed>(_onBackspacePressed);
@@ -136,14 +135,8 @@ class KeyboardBloc extends Bloc<KeyboardEvent, KeyboardState> {
     emit(state.copyWith(shiftEnabled: event.enabled));
   }
 
-  void _onShiftLocked(
-    KeyboardShiftLocked event,
-    Emitter<KeyboardState> emit,
-  ) {
-    emit(state.copyWith(
-      shiftLocked: event.locked,
-      shiftEnabled: event.locked,
-    ));
+  void _onShiftLocked(KeyboardShiftLocked event, Emitter<KeyboardState> emit) {
+    emit(state.copyWith(shiftLocked: event.locked, shiftEnabled: event.locked));
   }
 
   void _onCapsLockToggled(
@@ -153,17 +146,11 @@ class KeyboardBloc extends Bloc<KeyboardEvent, KeyboardState> {
     emit(state.copyWith(capsLockEnabled: event.enabled));
   }
 
-  void _onCtrlToggled(
-    KeyboardCtrlToggled event,
-    Emitter<KeyboardState> emit,
-  ) {
+  void _onCtrlToggled(KeyboardCtrlToggled event, Emitter<KeyboardState> emit) {
     emit(state.copyWith(ctrlEnabled: event.enabled));
   }
 
-  void _onAltToggled(
-    KeyboardAltToggled event,
-    Emitter<KeyboardState> emit,
-  ) {
+  void _onAltToggled(KeyboardAltToggled event, Emitter<KeyboardState> emit) {
     emit(state.copyWith(altEnabled: event.enabled));
   }
 
@@ -174,17 +161,11 @@ class KeyboardBloc extends Bloc<KeyboardEvent, KeyboardState> {
     emit(state.copyWith(superEnabled: event.enabled));
   }
 
-  void _onFnToggled(
-    KeyboardFnToggled event,
-    Emitter<KeyboardState> emit,
-  ) {
+  void _onFnToggled(KeyboardFnToggled event, Emitter<KeyboardState> emit) {
     emit(state.copyWith(fnEnabled: event.enabled));
   }
 
-  void _onModeChanged(
-    KeyboardModeChanged event,
-    Emitter<KeyboardState> emit,
-  ) {
+  void _onModeChanged(KeyboardModeChanged event, Emitter<KeyboardState> emit) {
     emit(state.copyWith(mode: event.mode, showModeSelector: false));
   }
 

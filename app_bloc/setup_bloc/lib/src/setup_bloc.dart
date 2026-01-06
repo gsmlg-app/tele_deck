@@ -8,10 +8,9 @@ import 'setup_state.dart';
 class SetupBloc extends Bloc<SetupEvent, SetupState> {
   final ImeChannelService _imeService;
 
-  SetupBloc({
-    required ImeChannelService imeService,
-  })  : _imeService = imeService,
-        super(SetupState.initial()) {
+  SetupBloc({required ImeChannelService imeService})
+    : _imeService = imeService,
+      super(SetupState.initial()) {
     on<SetupCheckRequested>(_onCheckRequested);
     on<SetupOpenImeSettings>(_onOpenImeSettings);
     on<SetupOpenImePicker>(_onOpenImePicker);
@@ -34,10 +33,7 @@ class SetupBloc extends Bloc<SetupEvent, SetupState> {
         imeActive: imeActive,
       );
 
-      emit(state.copyWith(
-        guideState: newGuideState,
-        isLoading: false,
-      ));
+      emit(state.copyWith(guideState: newGuideState, isLoading: false));
     } catch (e) {
       emit(state.copyWith(isLoading: false));
     }

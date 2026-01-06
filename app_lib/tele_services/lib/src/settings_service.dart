@@ -66,7 +66,10 @@ class SettingsService {
   }
 
   /// Save the last visibility state (for remember last state feature)
-  Future<void> saveLastVisibilityState(AppSettings current, bool isVisible) async {
+  Future<void> saveLastVisibilityState(
+    AppSettings current,
+    bool isVisible,
+  ) async {
     if (current.rememberLastState) {
       await saveSettings(current.copyWith(lastVisibilityState: isVisible));
     }
