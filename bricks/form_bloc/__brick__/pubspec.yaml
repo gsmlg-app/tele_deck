@@ -1,0 +1,31 @@
+name: {{name.snakeCase()}}_form_bloc
+description: {{name.pascalCase()}} Form BLoC package for form validation and submission.
+version: 0.1.0+1
+publish_to: none
+
+environment:
+  sdk: ">=3.8.0 <4.0.0"
+  flutter: ">=3.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # Form BLoC for advanced form handling
+  form_bloc:
+    path: ../../third_party/form_bloc
+  
+  # Flutter BLoC for state management
+  flutter_bloc: ^8.1.6
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  
+  # Testing
+  bloc_test: ^10.0.0
+  mocktail: ^1.0.3
+
+flutter:
+  # No Flutter-specific configuration needed

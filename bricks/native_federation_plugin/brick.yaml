@@ -1,0 +1,60 @@
+name: native_federation_plugin
+description: Generate a complete native federation plugin with platform-specific implementations for Android, iOS, Linux, macOS, and Windows.
+
+version: 0.1.0+1
+
+environment:
+  mason: ^0.1.1
+
+vars:
+  name:
+    type: string
+    description: Plugin name (e.g., client_info, battery_monitor)
+    prompt: What is your plugin name?
+
+  description:
+    type: string
+    description: Plugin description
+    prompt: What does this plugin do?
+
+  package_prefix:
+    type: string
+    description: Package name prefix (e.g., app, gsmlg)
+    default: app
+    prompt: What is your package prefix?
+
+  author:
+    type: string
+    description: Author name
+    default: GSMLG Team
+    prompt: Author name?
+
+  support_android:
+    type: boolean
+    description: Include Android platform support
+    default: true
+
+  support_ios:
+    type: boolean
+    description: Include iOS platform support
+    default: true
+
+  support_linux:
+    type: boolean
+    description: Include Linux platform support
+    default: true
+
+  support_macos:
+    type: boolean
+    description: Include macOS platform support
+    default: true
+
+  support_windows:
+    type: boolean
+    description: Include Windows platform support
+    default: true
+
+  support_web:
+    type: boolean
+    description: Include Web platform support
+    default: false

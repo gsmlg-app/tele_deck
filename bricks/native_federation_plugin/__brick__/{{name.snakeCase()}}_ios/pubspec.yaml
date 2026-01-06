@@ -1,0 +1,25 @@
+name: {{package_prefix.snakeCase()}}_{{name.snakeCase()}}_ios
+description: iOS implementation of {{package_prefix.snakeCase()}}_{{name.snakeCase()}}
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.5.0
+  flutter: ^3.24.0
+
+flutter:
+  plugin:
+    implements: {{package_prefix.snakeCase()}}_{{name.snakeCase()}}
+    platforms:
+      ios:
+        pluginClass: {{name.pascalCase()}}Plugin
+
+dependencies:
+  flutter:
+    sdk: flutter
+  {{package_prefix.snakeCase()}}_{{name.snakeCase()}}_platform_interface: any
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
