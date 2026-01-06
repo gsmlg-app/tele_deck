@@ -161,6 +161,15 @@ class ImeChannelService {
     }
   }
 
+  /// Open IME picker dialog to switch keyboards
+  Future<void> openImePicker() async {
+    try {
+      await _channel.invokeMethod(ImeMethod.openImePicker);
+    } catch (e) {
+      debugPrint('Failed to open IME picker: $e');
+    }
+  }
+
   // === Crash Log Actions ===
 
   /// Get all crash logs

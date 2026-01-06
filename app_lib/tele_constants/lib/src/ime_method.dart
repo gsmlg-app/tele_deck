@@ -20,6 +20,7 @@ class ImeMethod {
   static const String isImeEnabled = 'isImeEnabled';
   static const String isImeActive = 'isImeActive';
   static const String openImeSettings = 'openImeSettings';
+  static const String openImePicker = 'openImePicker';
   static const String getCrashLogs = 'getCrashLogs';
   static const String getCrashLogDetail = 'getCrashLogDetail';
   static const String clearCrashLogs = 'clearCrashLogs';

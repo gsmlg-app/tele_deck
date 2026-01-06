@@ -4,19 +4,14 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:setup_bloc/setup_bloc.dart';
 import 'package:tele_deck/router.dart';
-import 'package:tele_deck/screens/settings/crash_logs_screen.dart';
-import 'package:tele_deck/screens/settings/settings_screen.dart';
 import 'package:tele_services/tele_services.dart';
 import 'package:tele_theme/tele_theme.dart';
 
-/// Launcher app - shows setup guide or settings
+/// Launcher app - shows shell with Home, Logs, and Settings tabs
 class TeleDeckLauncherApp extends StatefulWidget {
   final ImeChannelService imeChannelService;
 
-  const TeleDeckLauncherApp({
-    super.key,
-    required this.imeChannelService,
-  });
+  const TeleDeckLauncherApp({super.key, required this.imeChannelService});
 
   @override
   State<TeleDeckLauncherApp> createState() => _TeleDeckLauncherAppState();
@@ -26,7 +21,6 @@ class _TeleDeckLauncherAppState extends State<TeleDeckLauncherApp>
     with WidgetsBindingObserver {
   late final GoRouter _router;
   bool _isLoading = true;
-  bool _isSetupComplete = false;
 
   @override
   void initState() {
@@ -34,11 +28,8 @@ class _TeleDeckLauncherAppState extends State<TeleDeckLauncherApp>
     WidgetsBinding.instance.addObserver(this);
     _setupMethodChannelListener();
 
-    // Create router with state getters
-    _router = AppRouter.createRouter(
-      isSetupComplete: () => _isSetupComplete,
-      isLoading: () => _isLoading,
-    );
+    // Create router with loading state getter
+    _router = AppRouter.createRouter(isLoading: () => _isLoading);
   }
 
   @override
@@ -63,15 +54,14 @@ class _TeleDeckLauncherAppState extends State<TeleDeckLauncherApp>
     settingsChannel.setMethodCallHandler((call) async {
       switch (call.method) {
         case 'onIMEStatusChanged':
-          // Refresh setup guide when IME status changes
+          // Refresh setup status when IME status changes
           if (mounted) {
             context.read<SetupBloc>().add(const SetupCheckRequested());
           }
           break;
         case 'viewCrashLogs':
-          // Deep link from crash notification
-          _router.goNamed(SettingsScreen.name);
-          _router.pushNamed(CrashLogsScreen.name);
+          // Deep link from crash notification - logs is now a tab in shell
+          // TODO: Add tab navigation support if needed
           break;
       }
     });
@@ -79,15 +69,13 @@ class _TeleDeckLauncherAppState extends State<TeleDeckLauncherApp>
 
   void _onSetupStateChanged(SetupState state) {
     final wasLoading = _isLoading;
-    final wasComplete = _isSetupComplete;
 
     setState(() {
       _isLoading = state.isLoading;
-      _isSetupComplete = state.isComplete;
     });
 
-    // Trigger route refresh when state changes
-    if (wasLoading != _isLoading || wasComplete != _isSetupComplete) {
+    // Trigger route refresh when loading state changes
+    if (wasLoading != _isLoading) {
       _router.refresh();
     }
   }
@@ -103,9 +91,9 @@ class _TeleDeckLauncherAppState extends State<TeleDeckLauncherApp>
         routerConfig: _router,
         builder: (context, child) {
           return MediaQuery(
-            data: MediaQuery.of(context).copyWith(
-              textScaler: TextScaler.noScaling,
-            ),
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: TextScaler.noScaling),
             child: child!,
           );
         },

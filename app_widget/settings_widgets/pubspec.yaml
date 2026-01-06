@@ -17,6 +17,9 @@ dependencies:
   # BLoC
   flutter_bloc: any
 
+  # Routing
+  go_router: any
+
   # UI
   google_fonts: any
 

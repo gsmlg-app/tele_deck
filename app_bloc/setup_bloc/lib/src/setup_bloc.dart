@@ -50,9 +50,7 @@ class SetupBloc extends Bloc<SetupEvent, SetupState> {
     SetupOpenImePicker event,
     Emitter<SetupState> emit,
   ) async {
-    // The native side will show the IME picker dialog
-    // For now, we just open the settings
-    await _imeService.openImeSettings();
+    await _imeService.openImePicker();
   }
 
   void _onImeStatusChanged(

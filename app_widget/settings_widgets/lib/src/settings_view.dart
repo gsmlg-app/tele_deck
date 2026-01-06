@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:settings_bloc/settings_bloc.dart';
 import 'package:setup_bloc/setup_bloc.dart';
@@ -26,13 +27,15 @@ class SettingsView extends StatelessWidget {
             letterSpacing: 3,
           ),
         ),
-        leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back,
-            color: Color(TeleDeckColors.neonCyan),
-          ),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
+        leading: context.canPop()
+            ? IconButton(
+                icon: const Icon(
+                  Icons.arrow_back,
+                  color: Color(TeleDeckColors.neonCyan),
+                ),
+                onPressed: () => context.pop(),
+              )
+            : null,
         actions: [
           IconButton(
             icon: const Icon(

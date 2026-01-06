@@ -75,6 +75,10 @@ class MainActivity : FlutterActivity() {
                     openIMESettings()
                     result.success(null)
                 }
+                "openImePicker" -> {
+                    openIMEPicker()
+                    result.success(null)
+                }
                 else -> {
                     result.notImplemented()
                 }

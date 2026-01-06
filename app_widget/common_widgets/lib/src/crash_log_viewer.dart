@@ -5,7 +5,13 @@ import 'package:tele_theme/tele_theme.dart';
 
 /// Crash log viewer widget
 class CrashLogViewer extends StatefulWidget {
-  const CrashLogViewer({super.key});
+  /// Whether to show back button in AppBar (for standalone usage)
+  final bool showBackButton;
+
+  const CrashLogViewer({
+    super.key,
+    this.showBackButton = true,
+  });
 
   @override
   State<CrashLogViewer> createState() => _CrashLogViewerState();
@@ -93,13 +99,15 @@ class _CrashLogViewerState extends State<CrashLogViewer> {
             letterSpacing: 3,
           ),
         ),
-        leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back,
-            color: Color(TeleDeckColors.neonCyan),
-          ),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
+        leading: widget.showBackButton
+            ? IconButton(
+                icon: const Icon(
+                  Icons.arrow_back,
+                  color: Color(TeleDeckColors.neonCyan),
+                ),
+                onPressed: () => Navigator.of(context).pop(),
+              )
+            : null,
         actions: [
           IconButton(
             icon: const Icon(
