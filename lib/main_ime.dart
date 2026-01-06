@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:keyboard_bloc/keyboard_bloc.dart';
-import 'package:keyboard_widgets/keyboard_widgets.dart';
 import 'package:settings_bloc/settings_bloc.dart';
+import 'package:tele_deck/screens/keyboard/keyboard_screen.dart';
 import 'package:tele_services/tele_services.dart';
 import 'package:tele_theme/tele_theme.dart';
 
@@ -112,16 +112,7 @@ class _TeleDeckKeyboardAppState extends State<TeleDeckKeyboardApp> {
           child: child!,
         );
       },
-      home: BlocBuilder<SettingsBloc, SettingsState>(
-        builder: (context, settingsState) {
-          // ignore: avoid_print
-          print('TeleDeckKeyboardApp: BlocBuilder building, status: ${settingsState.status}');
-          final rotation = settingsState.status == SettingsStatus.success
-              ? settingsState.settings.keyboardRotation
-              : 0;
-          return KeyboardView(rotation: rotation);
-        },
-      ),
+      home: const KeyboardScreen(),
     );
   }
 }

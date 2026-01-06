@@ -12,7 +12,7 @@ import 'package:settings_bloc/settings_bloc.dart';
 import 'package:setup_bloc/setup_bloc.dart';
 import 'package:tele_services/tele_services.dart';
 
-import 'package:tele_deck/main.dart';
+import 'package:tele_deck/app.dart';
 
 void main() {
   testWidgets('TeleDeck launcher app smoke test', (WidgetTester tester) async {
