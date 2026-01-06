@@ -8,10 +8,7 @@ class CrashLogViewer extends StatefulWidget {
   /// Whether to show back button in AppBar (for standalone usage)
   final bool showBackButton;
 
-  const CrashLogViewer({
-    super.key,
-    this.showBackButton = true,
-  });
+  const CrashLogViewer({super.key, this.showBackButton = true});
 
   @override
   State<CrashLogViewer> createState() => _CrashLogViewerState();

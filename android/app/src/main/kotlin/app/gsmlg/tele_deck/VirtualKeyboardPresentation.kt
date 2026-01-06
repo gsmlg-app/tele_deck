@@ -2,11 +2,14 @@ package app.gsmlg.tele_deck
 
 import android.app.Presentation
 import android.content.Context
+import android.graphics.Color
+import android.graphics.PixelFormat
 import android.os.Bundle
 import android.util.Log
 import android.view.Display
 import android.view.WindowManager
 import io.flutter.FlutterInjector
+import io.flutter.embedding.android.FlutterTextureView
 import io.flutter.embedding.android.FlutterView
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.embedding.engine.dart.DartExecutor
@@ -85,7 +88,14 @@ class VirtualKeyboardPresentation(
             // Keep screen on while keyboard is displayed
             window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
-            Log.d(TAG, "Window configured successfully")
+            // Set window format to OPAQUE for proper rendering
+            // This ensures the Flutter content is visible instead of being transparent
+            window.setFormat(PixelFormat.OPAQUE)
+
+            // Set a dark background to ensure visibility
+            window.setBackgroundDrawableResource(android.R.color.black)
+
+            Log.d(TAG, "Window configured successfully with OPAQUE format")
         } ?: Log.e(TAG, "Window is null - cannot configure presentation")
 
         // Create and attach FlutterView
@@ -106,9 +116,15 @@ class VirtualKeyboardPresentation(
         }
         val engine = localFlutterEngine!!
 
-        // Create FlutterView - better integration than FlutterTextureView
-        // FlutterView handles platform dispatcher, viewport metrics, text input, etc.
-        val view = FlutterView(context)
+        // Create FlutterTextureView for better secondary display compatibility
+        // FlutterTextureView uses TextureView which works better with window compositing
+        // on secondary displays compared to FlutterSurfaceView
+        // NOTE: TextureView doesn't support background drawables, so we can't set a background color
+        val textureView = FlutterTextureView(context)
+        Log.d(TAG, "FlutterTextureView created for secondary display")
+
+        // Create FlutterView wrapping the TextureView
+        val view = FlutterView(context, textureView)
         flutterView = view
 
         // Set the view as content view
@@ -191,8 +207,20 @@ class VirtualKeyboardPresentation(
             }
         }
 
-        // Pause the local engine but don't destroy it (for reuse)
-        localFlutterEngine?.lifecycleChannel?.appIsPaused()
+        // Destroy the local engine completely to ensure fresh state on next show
+        // This fixes the issue where reusing the engine with a new FlutterView
+        // doesn't render the Flutter UI properly
+        localFlutterEngine?.let { engine ->
+            Log.d(TAG, "Destroying local FlutterEngine on dismiss")
+            try {
+                engine.lifecycleChannel.appIsPaused()
+                engine.destroy()
+            } catch (e: Exception) {
+                Log.e(TAG, "Error destroying FlutterEngine", e)
+            }
+        }
+        localFlutterEngine = null
+        isDartEntrypointExecuted = false
 
         flutterView = null
         super.dismiss()

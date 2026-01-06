@@ -1,9 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tele_deck/screens/app/shell_screen.dart';
 import 'package:tele_deck/screens/app/splash_screen.dart';
+import 'package:tele_deck/screens/home/home_screen.dart';
 import 'package:tele_deck/screens/keyboard/keyboard_screen.dart';
-import 'package:tele_deck/screens/settings/crash_logs_screen.dart';
-import 'package:tele_deck/screens/settings/settings_screen.dart';
-import 'package:tele_deck/screens/setup/setup_screen.dart';
+import 'package:tele_deck/screens/logs/log_screen.dart';
+import 'package:tele_deck/screens/settings/setting_screen.dart';
 
 void main() {
   group('Screen constants', () {
@@ -12,19 +13,21 @@ void main() {
       expect(SplashScreen.path, equals('/'));
     });
 
-    test('SetupScreen has correct name and path', () {
-      expect(SetupScreen.name, equals('Setup'));
-      expect(SetupScreen.path, equals('/setup'));
+    test('ShellScreen has correct name and path', () {
+      expect(ShellScreen.name, equals('Shell'));
+      expect(ShellScreen.path, equals('/shell'));
     });
 
-    test('SettingsScreen has correct name and path', () {
-      expect(SettingsScreen.name, equals('Settings'));
-      expect(SettingsScreen.path, equals('/settings'));
+    test('HomeScreen has correct name', () {
+      expect(HomeScreen.name, equals('Home'));
     });
 
-    test('CrashLogsScreen has correct name and path', () {
-      expect(CrashLogsScreen.name, equals('Crash Logs'));
-      expect(CrashLogsScreen.path, equals('crash-logs'));
+    test('LogScreen has correct name', () {
+      expect(LogScreen.name, equals('Logs'));
+    });
+
+    test('SettingScreen has correct name', () {
+      expect(SettingScreen.name, equals('Settings'));
     });
 
     test('KeyboardScreen has correct name and path', () {
@@ -32,15 +35,9 @@ void main() {
       expect(KeyboardScreen.path, equals('/keyboard'));
     });
 
-    test('CrashLogsScreen path is relative (child route)', () {
-      // CrashLogsScreen is a child of SettingsScreen, so path should be relative
-      expect(CrashLogsScreen.path.startsWith('/'), isFalse);
-    });
-
     test('Top-level screens have absolute paths', () {
       expect(SplashScreen.path.startsWith('/'), isTrue);
-      expect(SetupScreen.path.startsWith('/'), isTrue);
-      expect(SettingsScreen.path.startsWith('/'), isTrue);
+      expect(ShellScreen.path.startsWith('/'), isTrue);
       expect(KeyboardScreen.path.startsWith('/'), isTrue);
     });
   });
