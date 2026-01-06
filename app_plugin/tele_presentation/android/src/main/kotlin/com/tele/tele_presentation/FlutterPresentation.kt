@@ -2,7 +2,6 @@ package com.tele.tele_presentation
 
 import android.app.Presentation
 import android.content.Context
-import android.hardware.display.DisplayManager
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -57,11 +56,13 @@ abstract class FlutterPresentation(
          * Creates a proper window context for the presentation.
          * On Android 12+, uses createWindowContext for proper display context.
          */
+        // TYPE_PRESENTATION constant (2011) for window context
+        private const val TYPE_PRESENTATION = 2011
+
         private fun createPresentationContext(context: Context, display: Display): Context {
             return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                val displayManager = context.getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
                 context.createDisplayContext(display)
-                    .createWindowContext(WindowManager.LayoutParams.TYPE_PRESENTATION, null)
+                    .createWindowContext(TYPE_PRESENTATION, null)
             } else {
                 context.createDisplayContext(display)
             }
@@ -106,7 +107,7 @@ abstract class FlutterPresentation(
                 FrameLayout.LayoutParams.MATCH_PARENT
             )
         }
-        setContentView(container)
+        setContentView(container!!)
 
         // Initialize Flutter engine with presentation context
         initFlutterEngine()
