@@ -151,21 +151,15 @@ jobs:
       - name: Bootstrap workspace
         run: melos bootstrap
 
-      - name: Configure Gradle mirrors
-        run: |
-          mkdir -p ~/.gradle
-          cat > ~/.gradle/init.gradle << 'EOF'
-          allprojects {
-            repositories {
-              // Add mirrors before Maven Central for rate-limiting issues
-              maven { url 'https://maven.aliyun.com/repository/public' }
-              maven { url 'https://maven.aliyun.com/repository/google' }
-            }
-          }
-          EOF
-
       - name: Build Android APK (debug)
-        run: flutter build apk --debug
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 15
+          max_attempts: 3
+          retry_wait_seconds: 30
+          command: flutter build apk --debug
+        env:
+          GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.parallel=true"
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4

@@ -14,8 +14,6 @@ pluginManagement {
         google()
         mavenCentral()
         gradlePluginPortal()
-        // Fallback mirror for when Maven Central rate limits
-        maven { url = uri("https://maven.aliyun.com/repository/public") }
     }
 }
 
