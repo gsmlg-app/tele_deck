@@ -1,6 +1,6 @@
 ---
-name: flutter-bloc
-description: Guide for creating BLoC patterns with events, states, and proper structure in app_bloc packages
+name: project-bloc
+description: Guide for creating BLoC patterns with events, states, and proper structure in app_bloc packages (project)
 ---
 
 # Flutter BLoC Development Skill

@@ -1,6 +1,6 @@
 ---
-name: flutter-screen
-description: Guide for creating screens with routing conventions (name/path constants) and adaptive scaffold
+name: project-screen
+description: Guide for creating screens with routing conventions (name/path constants) and adaptive scaffold (project)
 ---
 
 # Flutter Screen Development Skill
