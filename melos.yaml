@@ -6,6 +6,7 @@ packages:
   - app_lib/**
   - app_bloc/**
   - app_widget/**
+  - app_plugin/**
 
 command:
   bootstrap:

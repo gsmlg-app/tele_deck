@@ -204,11 +204,79 @@ class FlutterPresentation(
 }
 ```
 
+## Available Plugin: `tele_presentation`
+
+The `tele_presentation` plugin provides reusable components for secondary display support:
+
+### Native Components (Kotlin)
+
+**FlutterPresentation** - Base class for Flutter on secondary displays:
+```kotlin
+import com.tele.tele_presentation.FlutterPresentation
+
+class MyPresentation(
+    context: Context,
+    display: Display,
+    dartEntrypoint: String = "secondaryMain"
+) : FlutterPresentation(context, display, dartEntrypoint) {
+
+    override fun onEngineReady(engine: FlutterEngine) {
+        // Set up MethodChannel communication
+        MethodChannel(engine.dartExecutor.binaryMessenger, "my_channel")
+            .setMethodCallHandler { call, result -> /* ... */ }
+    }
+}
+```
+
+**DisplayHelper** - Display detection with debounced events:
+```kotlin
+import com.tele.tele_presentation.DisplayHelper
+
+val displayHelper = DisplayHelper(context)
+
+// Check for secondary display
+val secondaryDisplay = displayHelper.getSecondaryDisplay()
+
+// Listen for display changes (debounced)
+displayHelper.registerDisplayListener(object : DisplayHelper.DisplayListener {
+    override fun onDisplayAdded(display: Display) {
+        // Show presentation
+    }
+    override fun onDisplayRemoved(displayId: Int) {
+        // Dismiss presentation
+    }
+})
+```
+
+### Dart API
+
+```dart
+import 'package:tele_presentation/tele_presentation.dart';
+
+// Check for secondary display
+final hasSecondary = await TelePresentation.instance.hasSecondaryDisplay();
+final display = await TelePresentation.instance.getSecondaryDisplay();
+
+// Listen for display events
+TelePresentation.instance.startListening();
+TelePresentation.instance.displayEvents.listen((event) {
+  switch (event.type) {
+    case DisplayEventType.added:
+      print('Display added: ${event.display}');
+    case DisplayEventType.removed:
+      print('Display removed: ${event.displayId}');
+    case DisplayEventType.changed:
+      print('Display changed');
+  }
+});
+```
+
 ## Reference Implementation
 
 See the TeleDeck codebase:
 - `android/.../VirtualKeyboardPresentation.kt` - Flutter Presentation with local engine
 - `android/.../TeleDeckIMEService.kt` - Display management and mode switching
+- `app_plugin/tele_presentation/` - Plugin source code
 
 ## Debugging
 

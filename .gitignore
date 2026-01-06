@@ -49,3 +49,7 @@ app.*.map.json
 !/.claude/commands/
 !/.claude/skills/
 
+# mason
+/.mason
+mason-lock.json
+

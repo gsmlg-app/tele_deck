@@ -254,12 +254,132 @@ override fun onShowInputRequested(flags: Int, configChange: Boolean): Boolean {
 }
 ```
 
+## Available Plugin: `tele_ime`
+
+The `tele_ime` plugin provides reusable components for building IMEs:
+
+### Native Components (Kotlin)
+
+**BaseImeService** - Base class for Flutter-based IMEs:
+```kotlin
+import com.tele.tele_ime.BaseImeService
+
+class MyIMEService : BaseImeService() {
+
+    override fun getDartEntrypoint(): String = "imeMain"
+
+    override fun getKeyboardHeight(): Int? {
+        // Return null for default, 0 to hide (secondary display mode)
+        return (resources.displayMetrics.heightPixels * 0.5).toInt()
+    }
+
+    override fun onSetupMethodChannel(channel: MethodChannel) {
+        // Add custom handlers (base handles commitText, backspace, etc.)
+    }
+}
+```
+
+**ImeHelper** - IME status and settings utilities:
+```kotlin
+import com.tele.tele_ime.ImeHelper
+
+val imeHelper = ImeHelper(context)
+
+// Check IME status
+val isEnabled = imeHelper.isImeEnabled(MyIMEService::class.java)
+val isActive = imeHelper.isImeActive(MyIMEService::class.java)
+
+// Open settings
+imeHelper.openImeSettings()
+imeHelper.showImePicker()
+
+// Get all IMEs
+val installedImes = imeHelper.getInstalledImes()
+```
+
+### Dart API
+
+**TeleImeSettings** - For launcher/setup app:
+```dart
+import 'package:tele_ime/tele_ime.dart';
+
+// Check IME status
+final isEnabled = await TeleImeSettings.instance.isImeEnabled();
+final isActive = await TeleImeSettings.instance.isImeActive();
+
+// Open settings
+await TeleImeSettings.instance.openImeSettings();
+await TeleImeSettings.instance.showImePicker();
+
+// List IMEs
+final imes = await TeleImeSettings.instance.getInstalledImes();
+```
+
+**TeleImeKeyboard** - For keyboard UI:
+```dart
+import 'package:tele_ime/tele_ime.dart';
+
+// Initialize keyboard service
+TeleImeKeyboard.instance.initialize();
+TeleImeKeyboard.instance.onInputStarted = (editorInfo) {
+  print('Input started: ${editorInfo.packageName}');
+};
+
+// Send text operations
+await TeleImeKeyboard.instance.commitText('Hello');
+await TeleImeKeyboard.instance.backspace();
+await TeleImeKeyboard.instance.enter();
+await TeleImeKeyboard.instance.sendKeyEvent(KeyEvent.KEYCODE_TAB);
+```
+
+## Available Plugin: `tele_crash_logger`
+
+The `tele_crash_logger` plugin provides crash logging with notifications:
+
+### Native (Kotlin)
+```kotlin
+import com.tele.tele_crash_logger.CrashLogger
+
+// Log a crash
+CrashLogger.logCrash(
+    context = this,
+    errorType = "FlutterError",
+    message = "Widget build failed",
+    stackTrace = exception.stackTraceToString(),
+    engineState = "running",
+    showNotification = true
+)
+
+// Log an exception
+CrashLogger.logException(context, exception, showNotification = true)
+```
+
+### Dart API
+```dart
+import 'package:tele_crash_logger/tele_crash_logger.dart';
+
+// Log crash
+await TeleCrashLogger.instance.logCrash(
+  errorType: 'FlutterError',
+  message: 'Something went wrong',
+  stackTrace: stackTrace.toString(),
+);
+
+// Get crash logs
+final logs = await TeleCrashLogger.instance.getCrashLogs();
+
+// Clear logs
+await TeleCrashLogger.instance.clearCrashLogs();
+```
+
 ## Reference Implementation
 
 See the TeleDeck codebase:
 - `android/.../TeleDeckIMEService.kt` - Full IME implementation with dual-screen support
 - `lib/main_ime.dart` - Flutter keyboard entry point (`@pragma('vm:entry-point')`)
 - `app_lib/tele_services/` - `ImeChannelService` for Flutter-side MethodChannel
+- `app_plugin/tele_ime/` - IME plugin source code
+- `app_plugin/tele_crash_logger/` - Crash logger plugin source code
 
 ## Debugging
 
