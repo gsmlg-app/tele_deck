@@ -151,6 +151,19 @@ jobs:
       - name: Bootstrap workspace
         run: melos bootstrap
 
+      - name: Configure Gradle mirrors
+        run: |
+          mkdir -p ~/.gradle
+          cat > ~/.gradle/init.gradle << 'EOF'
+          allprojects {
+            repositories {
+              // Add mirrors before Maven Central for rate-limiting issues
+              maven { url 'https://maven.aliyun.com/repository/public' }
+              maven { url 'https://maven.aliyun.com/repository/google' }
+            }
+          }
+          EOF
+
       - name: Build Android APK (debug)
         run: flutter build apk --debug
 
