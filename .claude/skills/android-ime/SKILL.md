@@ -1,4 +1,5 @@
 ---
+name: android-ime
 description: Guide for building Android Input Method Engines (IME) with InputMethodService
 ---
 

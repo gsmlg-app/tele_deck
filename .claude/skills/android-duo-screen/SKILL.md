@@ -1,4 +1,5 @@
 ---
+name: android-duo-screen
 description: Guide for building dual-screen Android apps using Presentation API for secondary displays
 ---
 
