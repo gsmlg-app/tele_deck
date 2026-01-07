@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' hide KeyboardKey;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:keyboard_bloc/keyboard_bloc.dart';
@@ -7,6 +8,18 @@ import 'package:tele_theme/tele_theme.dart';
 
 import 'keyboard_key.dart';
 import 'mode_selector_overlay.dart';
+
+/// Shift symbol mappings for special characters
+const _shiftSymbolMap = {
+  '[': '{',
+  ']': '}',
+  '\\': '|',
+  ';': ':',
+  "'": '"',
+  ',': '<',
+  '.': '>',
+  '/': '?',
+};
 
 /// BLoC-based keyboard view for IME
 class KeyboardView extends StatelessWidget {
@@ -89,6 +102,28 @@ class _KeyboardHeader extends StatelessWidget {
           ),
           child: Row(
             children: [
+              // IME picker button
+              GestureDetector(
+                onTap: () => _openImePicker(context),
+                child: Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                      color: const Color(
+                        TeleDeckColors.neonCyan,
+                      ).withValues(alpha: 0.5),
+                      width: 1,
+                    ),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Icon(
+                    Icons.keyboard_alt_outlined,
+                    color: const Color(TeleDeckColors.neonCyan),
+                    size: 16,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
               // Settings info button
               GestureDetector(
                 onTap: () => _showSettingsInfo(context),
@@ -182,11 +217,45 @@ class _KeyboardHeader extends StatelessWidget {
                   ],
                 ),
               ),
+              const SizedBox(width: 8),
+              // Hide keyboard button
+              GestureDetector(
+                onTap: () => _hideKeyboard(context),
+                child: Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                      color: const Color(
+                        TeleDeckColors.neonMagenta,
+                      ).withValues(alpha: 0.5),
+                      width: 1,
+                    ),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Icon(
+                    Icons.keyboard_hide,
+                    color: const Color(TeleDeckColors.neonMagenta),
+                    size: 16,
+                  ),
+                ),
+              ),
             ],
           ),
         );
       },
     );
+  }
+
+  void _hideKeyboard(BuildContext context) {
+    // Use platform channel to hide keyboard
+    const channel = MethodChannel('tele_deck/ime');
+    channel.invokeMethod('hideKeyboard');
+  }
+
+  void _openImePicker(BuildContext context) {
+    // Use platform channel to open system IME picker
+    const channel = MethodChannel('tele_deck/ime');
+    channel.invokeMethod('openImePicker');
   }
 
   void _showSettingsInfo(BuildContext context) {
@@ -305,6 +374,22 @@ class _FunctionRow extends StatelessWidget {
 
   const _FunctionRow({required this.fnEnabled});
 
+  // Media function icons for F1-F12 when Fn is pressed
+  static const _fnMediaIcons = {
+    'F1': Icons.brightness_low,      // Brightness down
+    'F2': Icons.brightness_high,     // Brightness up
+    'F3': Icons.view_carousel,       // App switcher
+    'F4': Icons.search,              // Search/Spotlight
+    'F5': Icons.mic_off,             // Mic off
+    'F6': Icons.mic,                 // Mic on
+    'F7': Icons.skip_previous,       // Previous track
+    'F8': Icons.play_arrow,          // Play/Pause
+    'F9': Icons.skip_next,           // Next track
+    'F10': Icons.volume_off,         // Mute
+    'F11': Icons.volume_down,        // Volume down
+    'F12': Icons.volume_up,          // Volume up
+  };
+
   @override
   Widget build(BuildContext context) {
     final bloc = context.read<KeyboardBloc>();
@@ -324,15 +409,19 @@ class _FunctionRow extends StatelessWidget {
             displayLabel: 'Del',
             onTap: () => bloc.add(const KeyboardDeletePressed()),
             isSpecial: true,
+            enableLongPressRepeat: true,
           );
         } else if (key.startsWith('F')) {
           final num = int.parse(key.substring(1));
+          final mediaIcon = _fnMediaIcons[key];
           return KeyboardKey(
             label: key,
+            displayLabel: fnEnabled ? null : key,
+            icon: fnEnabled ? mediaIcon : null,
             onTap: () => bloc.add(KeyboardFunctionKeyPressed(num)),
             isSpecial: true,
             accentColor: fnEnabled
-                ? const Color(TeleDeckColors.neonCyan)
+                ? const Color(TeleDeckColors.neonMagenta)
                 : null,
           );
         }
@@ -378,6 +467,7 @@ class _NumberRow extends StatelessWidget {
             flex: KeyboardLayout.keyFlex['BACKSPACE'] ?? 1.0,
             isSpecial: true,
             accentColor: const Color(TeleDeckColors.neonMagenta),
+            enableLongPressRepeat: true,
           );
         }
         final symbol = _numberSymbolMap[key] ?? key;
@@ -415,6 +505,7 @@ class _QwertyRow extends StatelessWidget {
           );
         }
         if (key.length == 1 && key.toUpperCase() != key.toLowerCase()) {
+          // Letters: show uppercase when shifted
           final displayKey = isUpperCase
               ? key.toUpperCase()
               : key.toLowerCase();
@@ -422,11 +513,23 @@ class _QwertyRow extends StatelessWidget {
             label: key,
             displayLabel: displayKey,
             onTap: () => bloc.add(KeyboardKeyPressed(displayKey)),
+            enableLongPressRepeat: true,
+          );
+        }
+        // Special characters: show both normal and shifted symbol
+        final shiftedSymbol = _shiftSymbolMap[key];
+        if (shiftedSymbol != null) {
+          return _SymbolKey(
+            normal: key,
+            shifted: shiftedSymbol,
+            isShifted: isUpperCase,
+            onTap: () => bloc.add(KeyboardKeyPressed(key)),
           );
         }
         return KeyboardKey(
           label: key,
           onTap: () => bloc.add(KeyboardKeyPressed(key)),
+          enableLongPressRepeat: true,
         );
       }).toList(),
     );
@@ -468,6 +571,7 @@ class _AsdfRow extends StatelessWidget {
           );
         }
         if (key.length == 1 && key.toUpperCase() != key.toLowerCase()) {
+          // Letters: show uppercase when shifted
           final displayKey = isUpperCase
               ? key.toUpperCase()
               : key.toLowerCase();
@@ -475,11 +579,23 @@ class _AsdfRow extends StatelessWidget {
             label: key,
             displayLabel: displayKey,
             onTap: () => bloc.add(KeyboardKeyPressed(displayKey)),
+            enableLongPressRepeat: true,
+          );
+        }
+        // Special characters: show both normal and shifted symbol
+        final shiftedSymbol = _shiftSymbolMap[key];
+        if (shiftedSymbol != null) {
+          return _SymbolKey(
+            normal: key,
+            shifted: shiftedSymbol,
+            isShifted: isUpperCase,
+            onTap: () => bloc.add(KeyboardKeyPressed(key)),
           );
         }
         return KeyboardKey(
           label: key,
           onTap: () => bloc.add(KeyboardKeyPressed(key)),
+          enableLongPressRepeat: true,
         );
       }).toList(),
     );
@@ -522,6 +638,7 @@ class _ZxcvRow extends StatelessWidget {
           );
         }
         if (key.length == 1 && key.toUpperCase() != key.toLowerCase()) {
+          // Letters: show uppercase when shifted
           final displayKey = isUpperCase
               ? key.toUpperCase()
               : key.toLowerCase();
@@ -529,11 +646,23 @@ class _ZxcvRow extends StatelessWidget {
             label: key,
             displayLabel: displayKey,
             onTap: () => bloc.add(KeyboardKeyPressed(displayKey)),
+            enableLongPressRepeat: true,
+          );
+        }
+        // Special characters: show both normal and shifted symbol
+        final shiftedSymbol = _shiftSymbolMap[key];
+        if (shiftedSymbol != null) {
+          return _SymbolKey(
+            normal: key,
+            shifted: shiftedSymbol,
+            isShifted: isUpperCase,
+            onTap: () => bloc.add(KeyboardKeyPressed(key)),
           );
         }
         return KeyboardKey(
           label: key,
           onTap: () => bloc.add(KeyboardKeyPressed(key)),
+          enableLongPressRepeat: true,
         );
       }).toList(),
     );
@@ -985,6 +1114,7 @@ class _EmojiLayout extends StatelessWidget {
                   onTap: () => bloc.add(const KeyboardBackspacePressed()),
                   isSpecial: true,
                   flex: 1.5,
+                  enableLongPressRepeat: true,
                 ),
                 KeyboardKey(
                   label: 'Space',
@@ -1060,6 +1190,75 @@ class _NumberSymbolKey extends StatelessWidget {
                 ),
                 Text(
                   number,
+                  style: GoogleFonts.robotoMono(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: isShifted
+                        ? const Color(
+                            TeleDeckColors.textPrimary,
+                          ).withValues(alpha: 0.5)
+                        : const Color(TeleDeckColors.textPrimary),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Symbol key showing both normal and shifted symbol (like [ and {)
+class _SymbolKey extends StatelessWidget {
+  final String normal;
+  final String shifted;
+  final bool isShifted;
+  final VoidCallback onTap;
+
+  const _SymbolKey({
+    required this.normal,
+    required this.shifted,
+    required this.isShifted,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      flex: 10,
+      child: Padding(
+        padding: const EdgeInsets.all(2),
+        child: GestureDetector(
+          onTap: onTap,
+          child: Container(
+            decoration: BoxDecoration(
+              color: const Color(TeleDeckColors.keySurface),
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(
+                color: const Color(
+                  TeleDeckColors.neonCyan,
+                ).withValues(alpha: 0.3),
+                width: 1,
+              ),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  shifted,
+                  style: GoogleFonts.robotoMono(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w500,
+                    color: isShifted
+                        ? const Color(TeleDeckColors.neonMagenta)
+                        : const Color(
+                            TeleDeckColors.textPrimary,
+                          ).withValues(alpha: 0.5),
+                  ),
+                ),
+                Text(
+                  normal,
                   style: GoogleFonts.robotoMono(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,

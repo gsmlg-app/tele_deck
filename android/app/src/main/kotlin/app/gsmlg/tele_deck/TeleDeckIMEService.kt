@@ -1,5 +1,6 @@
 package app.gsmlg.tele_deck
 
+import android.app.ActivityManager
 import android.content.Context
 import android.hardware.display.DisplayManager
 import android.inputmethodservice.InputMethodService
@@ -181,6 +182,14 @@ class TeleDeckIMEService : InputMethodService() {
                     "isImeActive" -> {
                         result.success(isImeActive())
                     }
+                    "openImePicker" -> {
+                        openImePicker()
+                        result.success(true)
+                    }
+                    "hideKeyboard" -> {
+                        hideKeyboard()
+                        result.success(true)
+                    }
                     else -> {
                         result.notImplemented()
                     }
@@ -315,14 +324,18 @@ class TeleDeckIMEService : InputMethodService() {
     }
 
     /**
-     * Create an empty 0-height view (used when FlutterEngine is not ready)
+     * Create an empty minimal-height view (used when keyboard is on secondary display)
+     * Uses 1dp height to ensure IME framework properly triggers input view callbacks
      */
     private fun createEmptyView(): View {
+        Log.d(TAG, "createEmptyView - creating 1dp placeholder view")
         return FrameLayout(this).apply {
             layoutParams = ViewGroup.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
-                0
+                1 // 1dp to ensure callbacks are triggered but invisible on screen
             )
+            // Make it invisible so apps don't see a black bar
+            visibility = View.INVISIBLE
         }
     }
 
@@ -487,22 +500,53 @@ class TeleDeckIMEService : InputMethodService() {
         Log.d(TAG, "======= onStartInputView START =======")
         Log.d(TAG, "onStartInputView - restarting: $restarting, primaryFallback: $isInPrimaryFallbackMode")
         Log.d(TAG, "onStartInputView - secondaryDisplay: ${secondaryDisplay?.displayId}")
-        Log.d(TAG, "onStartInputView - presentation: ${presentation != null}")
+        Log.d(TAG, "onStartInputView - presentation: ${presentation != null}, isShowing: ${presentation?.isShowing}")
         Log.d(TAG, "onStartInputView - editorInfo: ${info?.packageName}, inputType: ${info?.inputType}")
 
         // Notify Flutter about input connection
         notifyFlutterConnectionStatus(true)
 
-        if (isInPrimaryFallbackMode) {
-            // In primary fallback mode - ensure FlutterView is attached
-            Log.d(TAG, "onStartInputView - using PRIMARY FALLBACK MODE")
+        if (secondaryDisplay == null) {
+            // No secondary display - use primary fallback mode
+            Log.d(TAG, "onStartInputView - no secondary display, using PRIMARY FALLBACK MODE")
+            isInPrimaryFallbackMode = true
             ensurePrimaryViewAttached()
-            // Notify Flutter about primary fallback mode
             notifyDisplayModeChanged("primary_fallback", null)
         } else {
-            // Show keyboard on secondary display if available
-            Log.d(TAG, "onStartInputView - showing keyboard on SECONDARY DISPLAY")
-            showKeyboardPresentation()
+            // Dual display mode - detect which display has input and show keyboard on the other
+            val inputOnSecondary = isInputOnSecondaryDisplay()
+            Log.d(TAG, "onStartInputView - inputOnSecondary: $inputOnSecondary")
+
+            if (inputOnSecondary) {
+                // Input is on secondary display - show keyboard on PRIMARY display
+                Log.d(TAG, "onStartInputView - input on secondary, showing keyboard on PRIMARY")
+
+                // Get the primary display
+                val primaryDisplay = displayManager?.getDisplay(Display.DEFAULT_DISPLAY)
+                if (primaryDisplay != null) {
+                    Log.d(TAG, "onStartInputView - primary display found: ${primaryDisplay.displayId}")
+                    // Hide any existing presentation (might be on secondary)
+                    hideKeyboardPresentation()
+                    isInPrimaryFallbackMode = false
+                    // Show keyboard presentation on PRIMARY display
+                    showKeyboardPresentation(primaryDisplay)
+                    notifyDisplayModeChanged("primary_for_secondary_input", primaryDisplay)
+                } else {
+                    Log.e(TAG, "onStartInputView - could not get primary display!")
+                    // Fallback to embedded view
+                    isInPrimaryFallbackMode = true
+                    cleanupPrimaryFlutterView()
+                    val newView = createPrimaryFlutterView()
+                    setInputView(newView)
+                    notifyDisplayModeChanged("primary_fallback", null)
+                }
+            } else {
+                // Input is on primary display (default) - show keyboard on SECONDARY display
+                Log.d(TAG, "onStartInputView - input on primary, showing keyboard on SECONDARY")
+                cleanupPrimaryFlutterView()
+                isInPrimaryFallbackMode = false
+                showKeyboardPresentation(secondaryDisplay)
+            }
         }
         Log.d(TAG, "======= onStartInputView END =======")
     }
@@ -537,8 +581,15 @@ class TeleDeckIMEService : InputMethodService() {
             Log.d(TAG, "Primary fallback mode - keeping view for reuse")
             // Don't detach - keep the view attached for smooth transitions
         } else {
-            // Hide keyboard presentation (secondary display mode)
-            hideKeyboardPresentation()
+            // Secondary display mode - DO NOT hide the keyboard presentation here!
+            // On dual-screen devices like Ayaneo Pocket DS, other apps on the secondary display
+            // (like the secondary launcher) can cause rapid focus changes that trigger
+            // onFinishInputView even though we still want the keyboard visible.
+            // The keyboard will be hidden when:
+            // 1. toggleKeyboard() or hideKeyboard() is called (user action)
+            // 2. onDestroy() is called (service destroyed)
+            // 3. handleDisplayRemoved() is called (secondary display disconnected)
+            Log.d(TAG, "Secondary display mode - keeping presentation visible")
         }
     }
 
@@ -564,16 +615,42 @@ class TeleDeckIMEService : InputMethodService() {
         isInPrimaryFallbackMode = false
     }
 
-    private fun showKeyboardPresentation() {
-        val display = secondaryDisplay
+    private fun showKeyboardPresentation(targetDisplay: Display? = null) {
+        // Use target display if provided, otherwise default to secondary display
+        val display = targetDisplay ?: secondaryDisplay
         if (display == null) {
-            Log.d(TAG, "No secondary display available for presentation")
+            Log.d(TAG, "No target display available for presentation")
             return
         }
+        Log.d(TAG, "showKeyboardPresentation - target display: ${display.displayId}")
 
-        if (presentation != null) {
-            Log.d(TAG, "Presentation already showing")
-            return
+        // Check if presentation exists and is on the correct display
+        presentation?.let { p ->
+            if (p.isShowing) {
+                // Check if it's on the correct display
+                if (p.display?.displayId == display.displayId) {
+                    Log.d(TAG, "Presentation already showing on correct display: ${display.displayId}")
+                    return
+                } else {
+                    // Presentation is on wrong display - dismiss and recreate
+                    Log.d(TAG, "Presentation on wrong display (${p.display?.displayId}), need display ${display.displayId}, dismissing")
+                    try {
+                        p.dismiss()
+                    } catch (e: Exception) {
+                        Log.w(TAG, "Error dismissing presentation", e)
+                    }
+                    presentation = null
+                }
+            } else {
+                // Presentation exists but is not showing - clean it up
+                Log.d(TAG, "Presentation reference exists but not showing, cleaning up stale reference")
+                try {
+                    p.dismiss()
+                } catch (e: Exception) {
+                    Log.w(TAG, "Error dismissing stale presentation", e)
+                }
+                presentation = null
+            }
         }
 
         val engine = flutterEngine
@@ -591,12 +668,13 @@ class TeleDeckIMEService : InputMethodService() {
         try {
             // On Android 12+ (API 31), we need to create a WindowContext for the Presentation
             // because InputMethodService context has window type TYPE_INPUT_METHOD (2037)
-            // but Presentation requires TYPE_PRESENTATION (2011)
+            // We use TYPE_APPLICATION_OVERLAY (2038) to appear above other apps on display 2
             val presentationContext: Context = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                Log.d(TAG, "Android 12+ detected, creating WindowContext for Presentation")
-                // TYPE_PRESENTATION = 2011
-                createDisplayContext(display).createWindowContext(
-                    2011,
+                Log.d(TAG, "Android 12+ detected, creating WindowContext for Presentation with TYPE_APPLICATION_OVERLAY")
+                // Use applicationContext to avoid inheriting IME service's window type
+                // Then create display context and window context for the overlay type
+                applicationContext.createDisplayContext(display).createWindowContext(
+                    WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
                     null
                 )
             } else {
@@ -702,6 +780,111 @@ class TeleDeckIMEService : InputMethodService() {
             android.provider.Settings.Secure.DEFAULT_INPUT_METHOD
         )
         return currentIme?.contains(packageName) == true
+    }
+
+    /**
+     * Open the system IME picker to switch keyboards
+     */
+    private fun openImePicker() {
+        val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+        imm.showInputMethodPicker()
+    }
+
+    /**
+     * Detect which display the input is coming from.
+     * Returns the display ID of the input window, or DEFAULT_DISPLAY if unknown.
+     */
+    private fun detectInputDisplayId(): Int {
+        val editorPackage = currentInputEditorInfo?.packageName
+        Log.d(TAG, "detectInputDisplayId - editorPackage: $editorPackage")
+
+        try {
+            // Method 1: On Android 11+ (API 30+), use ActivityManager to get running tasks with display info
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                val activityManager = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+                @Suppress("DEPRECATION")
+                val runningTasks = activityManager.getRunningTasks(20)
+                Log.d(TAG, "detectInputDisplayId - found ${runningTasks.size} running tasks")
+
+                for (taskInfo in runningTasks) {
+                    val taskPackage = taskInfo.topActivity?.packageName
+                    Log.d(TAG, "Running task: $taskPackage, baseActivity: ${taskInfo.baseActivity?.packageName}")
+
+                    if (editorPackage != null && taskPackage == editorPackage) {
+                        // On Android 12+ (API 31+), TaskInfo has displayId property directly
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                            // Try direct property access first (available on newer SDKs)
+                            try {
+                                // TaskInfo.displayId is a public field
+                                val taskDisplayId = taskInfo.javaClass.getDeclaredField("displayId").let { field ->
+                                    field.isAccessible = true
+                                    field.getInt(taskInfo)
+                                }
+                                Log.d(TAG, "Task $taskPackage displayId (via field): $taskDisplayId")
+                                if (taskDisplayId != Display.DEFAULT_DISPLAY) {
+                                    Log.d(TAG, "detectInputDisplayId - returning display $taskDisplayId for $editorPackage")
+                                    return taskDisplayId
+                                }
+                            } catch (e: NoSuchFieldException) {
+                                Log.d(TAG, "displayId field not found: ${e.message}")
+                            } catch (e: Exception) {
+                                Log.d(TAG, "Could not get displayId: ${e.message}")
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Method 2: Check if the input package is known to run on secondary display
+            if (editorPackage != null) {
+                // Known secondary display packages for Ayaneo Pocket DS
+                val secondaryDisplayPackages = setOf(
+                    "com.ayaneo.gamewindow",
+                    "com.ayaneo.secondlauncher",
+                    "com.ayaneo.home"  // Secondary home launcher
+                )
+                if (editorPackage in secondaryDisplayPackages) {
+                    Log.d(TAG, "Input from known secondary display package: $editorPackage")
+                    return secondaryDisplay?.displayId ?: Display.DEFAULT_DISPLAY
+                }
+            }
+
+            // Method 3: Use the IME window's display context
+            // This is the most reliable method - the IME window is created on the same display as the input
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && secondaryDisplay != null) {
+                try {
+                    window?.window?.let { imeWindow ->
+                        val windowDisplay = imeWindow.context.display
+                        val windowDisplayId = windowDisplay?.displayId ?: Display.DEFAULT_DISPLAY
+                        Log.d(TAG, "IME window display: $windowDisplayId")
+
+                        // If the IME window is on a non-default display, that's where the input is!
+                        if (windowDisplayId != Display.DEFAULT_DISPLAY) {
+                            Log.d(TAG, "detectInputDisplayId - IME window on display $windowDisplayId, returning that")
+                            return windowDisplayId
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.d(TAG, "Could not get window display: ${e.message}")
+                }
+            }
+
+            Log.d(TAG, "detectInputDisplayId - returning DEFAULT_DISPLAY (0)")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error detecting input display", e)
+        }
+
+        // Default to primary display (Display.DEFAULT_DISPLAY = 0)
+        return Display.DEFAULT_DISPLAY
+    }
+
+    /**
+     * Check if input is on the secondary display.
+     */
+    private fun isInputOnSecondaryDisplay(): Boolean {
+        val inputDisplayId = detectInputDisplayId()
+        val secondaryId = secondaryDisplay?.displayId ?: return false
+        return inputDisplayId == secondaryId
     }
 
     /**

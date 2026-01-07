@@ -33,6 +33,12 @@ class VirtualKeyboardPresentation(
         // Local FlutterEngine for this presentation's display context
         private var localFlutterEngine: FlutterEngine? = null
         private var isDartEntrypointExecuted: Boolean = false
+
+        // Keep track of whether presentation is currently showing
+        // This allows the IME service to detect and reuse an existing presentation
+        private var isCurrentlyShowing: Boolean = false
+
+        fun isShowing(): Boolean = isCurrentlyShowing
     }
 
     /**
@@ -48,31 +54,11 @@ class VirtualKeyboardPresentation(
         Log.d(TAG, "VirtualKeyboardPresentation onCreate")
 
         // Configure window for keyboard presentation on secondary display
-        // NOTE: Do NOT use TYPE_INPUT_METHOD here - it's only valid for primary display IME
-        // Presentation windows manage their own window type internally
+        // NOTE: The window type is inherited from the WindowContext passed to the constructor.
+        // Do NOT set the window type here - it must match the context's window type.
         window?.let { window ->
             Log.d(TAG, "Configuring window for display: ${display.displayId}")
-
-            // ============================================================
-            // CRITICAL: Prevent focus stealing from primary display
-            // ============================================================
-            // FLAG_NOT_FOCUSABLE: Window won't get key input focus
-            //   - Key events go to focusable window behind it (primary display)
-            //   - Implicitly enables FLAG_NOT_TOUCH_MODAL
-            //   - Window still receives touch events for keyboard interaction
-            //
-            // FLAG_NOT_TOUCH_MODAL: Allows touch events outside window
-            //   to pass through to windows behind (primary display apps)
-            //
-            // This is essential for IME on secondary display - without these flags,
-            // touching the keyboard would steal focus from the primary display app,
-            // causing onFinishInputView to be called and the keyboard to disappear.
-            // ============================================================
-            window.addFlags(
-                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-                WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL
-            )
-            Log.d(TAG, "Window flags set: FLAG_NOT_FOCUSABLE | FLAG_NOT_TOUCH_MODAL")
+            Log.d(TAG, "Window type from context (should be TYPE_APPLICATION_OVERLAY)")
 
             // Make the presentation fullscreen on the secondary display
             window.setFlags(
@@ -81,6 +67,16 @@ class VirtualKeyboardPresentation(
                 WindowManager.LayoutParams.FLAG_FULLSCREEN or
                 WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
             )
+
+            // CRITICAL: Prevent the keyboard from stealing focus from primary display
+            // FLAG_NOT_FOCUSABLE - Key events go to primary display app, not keyboard
+            // FLAG_NOT_TOUCH_MODAL - Touch events outside keyboard pass through
+            // Without these flags, touching keyboard steals focus → onFinishInputView → keyboard disappears
+            window.addFlags(
+                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL
+            )
+            Log.d(TAG, "Added FLAG_NOT_FOCUSABLE | FLAG_NOT_TOUCH_MODAL to prevent focus stealing")
 
             // Set hardware acceleration
             window.addFlags(WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED)
@@ -95,7 +91,13 @@ class VirtualKeyboardPresentation(
             // Set a dark background to ensure visibility
             window.setBackgroundDrawableResource(android.R.color.black)
 
-            Log.d(TAG, "Window configured successfully with OPAQUE format")
+            // Also set the decor view background
+            window.decorView.setBackgroundColor(Color.BLACK)
+
+            // Log window details for debugging
+            val attrs = window.attributes
+            Log.d(TAG, "Window configured - type=${attrs.type}, format=${attrs.format}, flags=${attrs.flags}")
+            Log.d(TAG, "Window base layer should be above SecondaryLauncher")
         } ?: Log.e(TAG, "Window is null - cannot configure presentation")
 
         // Create and attach FlutterView
@@ -116,15 +118,18 @@ class VirtualKeyboardPresentation(
         }
         val engine = localFlutterEngine!!
 
-        // Create FlutterTextureView for better secondary display compatibility
-        // FlutterTextureView uses TextureView which works better with window compositing
-        // on secondary displays compared to FlutterSurfaceView
-        // NOTE: TextureView doesn't support background drawables, so we can't set a background color
-        val textureView = FlutterTextureView(context)
-        Log.d(TAG, "FlutterTextureView created for secondary display")
+        // Create FlutterView with default SurfaceView
+        val view = FlutterView(context)
+        Log.d(TAG, "FlutterView created with default SurfaceView")
 
-        // Create FlutterView wrapping the TextureView
-        val view = FlutterView(context, textureView)
+        // NOTE: Do not set focusable=true since window has FLAG_NOT_FOCUSABLE.
+        // Touch events work without focus, and keeping focus on primary display
+        // is critical for the IME to receive input.
+        view.isFocusable = false
+        view.isFocusableInTouchMode = false
+        view.isClickable = true  // Still allow click/touch events
+        Log.d(TAG, "FlutterView configured: focusable=false (FLAG_NOT_FOCUSABLE), clickable=true")
+
         flutterView = view
 
         // Set the view as content view
@@ -165,6 +170,11 @@ class VirtualKeyboardPresentation(
                     engine.lifecycleChannel.appIsResumed()
 
                     Log.d(TAG, "Local FlutterEngine lifecycle resumed")
+
+                    // NOTE: Do NOT request focus for the view or decor view.
+                    // The window has FLAG_NOT_FOCUSABLE set, so focus must stay on
+                    // the primary display app. Touch events still work without focus.
+                    Log.d(TAG, "FlutterView attached (not requesting focus - FLAG_NOT_FOCUSABLE)")
                 }
             }
 
@@ -180,11 +190,29 @@ class VirtualKeyboardPresentation(
         Log.d(TAG, "FlutterView created with local engine, waiting for window attachment")
     }
 
+    override fun dispatchTouchEvent(event: android.view.MotionEvent): Boolean {
+        Log.d(TAG, "dispatchTouchEvent: action=${event.actionMasked}, x=${event.x}, y=${event.y}")
+        return super.dispatchTouchEvent(event)
+    }
+
     override fun onStart() {
         super.onStart()
         Log.d(TAG, "VirtualKeyboardPresentation onStart, isAttachedToEngine=$isAttachedToEngine")
 
-        // Don't attach here - let the post callback handle it to ensure surface is ready
+        // Bring the window to front to ensure it's on top of other overlays
+        window?.let { window ->
+            Log.d(TAG, "Bringing window to front")
+            window.decorView.bringToFront()
+
+            // Also try setting the window as always on top
+            val layoutParams = window.attributes
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                // Use a flag to indicate this should be on top
+                layoutParams.flags = layoutParams.flags or
+                    WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS
+            }
+            window.attributes = layoutParams
+        }
     }
 
     override fun onStop() {

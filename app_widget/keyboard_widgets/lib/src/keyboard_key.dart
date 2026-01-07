@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:tele_theme/tele_theme.dart';
 
@@ -11,6 +14,8 @@ class KeyboardKey extends StatefulWidget {
   final bool isSpecial;
   final Color? accentColor;
   final IconData? icon;
+  final bool enableLongPressRepeat;
+  final bool enableHapticFeedback;
 
   const KeyboardKey({
     super.key,
@@ -21,6 +26,8 @@ class KeyboardKey extends StatefulWidget {
     this.isSpecial = false,
     this.accentColor,
     this.icon,
+    this.enableLongPressRepeat = false,
+    this.enableHapticFeedback = true,
   });
 
   @override
@@ -32,6 +39,9 @@ class _KeyboardKeyState extends State<KeyboardKey>
   bool _isPressed = false;
   late AnimationController _glowController;
   late Animation<double> _glowAnimation;
+  Timer? _repeatTimer;
+  static const _initialRepeatDelay = Duration(milliseconds: 400);
+  static const _repeatInterval = Duration(milliseconds: 50);
 
   @override
   void initState() {
@@ -48,22 +58,46 @@ class _KeyboardKeyState extends State<KeyboardKey>
 
   @override
   void dispose() {
+    _repeatTimer?.cancel();
     _glowController.dispose();
     super.dispose();
+  }
+
+  void _triggerHaptic() {
+    if (widget.enableHapticFeedback) {
+      HapticFeedback.lightImpact();
+    }
   }
 
   void _handleTapDown(TapDownDetails details) {
     setState(() => _isPressed = true);
     _glowController.forward();
+    _triggerHaptic();
+
+    // Start long press repeat timer if enabled
+    if (widget.enableLongPressRepeat) {
+      _repeatTimer?.cancel();
+      _repeatTimer = Timer(_initialRepeatDelay, () {
+        // Start repeating
+        _repeatTimer = Timer.periodic(_repeatInterval, (_) {
+          widget.onTap();
+          _triggerHaptic();
+        });
+      });
+    }
   }
 
   void _handleTapUp(TapUpDetails details) {
+    _repeatTimer?.cancel();
+    _repeatTimer = null;
     setState(() => _isPressed = false);
     _glowController.reverse();
     widget.onTap();
   }
 
   void _handleTapCancel() {
+    _repeatTimer?.cancel();
+    _repeatTimer = null;
     setState(() => _isPressed = false);
     _glowController.reverse();
   }
