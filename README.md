@@ -99,6 +99,20 @@ tele_deck/
 └── android/                # Native code
 ```
 
+## Supported Devices
+
+TeleDeck is designed for dual-screen Android handhelds. Device-specific implementation notes:
+
+| Device | Documentation |
+|--------|---------------|
+| **Ayaneo Pocket DS** | [docs/devices/ayaneo-pocket-ds.md](docs/devices/ayaneo-pocket-ds.md) |
+
+The Ayaneo Pocket DS documentation includes:
+- Display architecture (Primary 1920x1080, Secondary 1024x768)
+- Bidirectional keyboard placement
+- Gamewindow overlay workarounds
+- Debugging commands
+
 ## Requirements
 
 - Android 8.0+ (API 26+)

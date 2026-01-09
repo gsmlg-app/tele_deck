@@ -146,16 +146,68 @@ Tried various window types to appear above gamewindow:
 
 ### Architecture
 
+TeleDeck supports **bidirectional keyboard placement** - keyboard appears on the OPPOSITE display from where input is requested:
+
 ```
-TeleDeckIMEService (InputMethodService)
-    │
-    ├── Primary Display (Display 0)
-    │   └── Returns 0-height view (empty placeholder)
-    │
-    └── Secondary Display (Display 2)
-        └── VirtualKeyboardPresentation
-            └── Local FlutterEngine
-                └── Flutter Keyboard UI (imeMain entry point)
+┌─────────────────────────────────────────────────────────────────┐
+│                    TeleDeckIMEService                           │
+│                   (InputMethodService)                          │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+              ┌───────────────────────────────┐
+              │   detectInputDisplayId()      │
+              │   Uses IME window context     │
+              └───────────────────────────────┘
+                              │
+           ┌──────────────────┴──────────────────┐
+           ▼                                     ▼
+┌─────────────────────┐               ┌─────────────────────┐
+│ Input on Primary    │               │ Input on Secondary  │
+│ (Display 0)         │               │ (Display 2)         │
+└─────────────────────┘               └─────────────────────┘
+           │                                     │
+           ▼                                     ▼
+┌─────────────────────┐               ┌─────────────────────┐
+│ Show Keyboard on    │               │ Show Keyboard on    │
+│ SECONDARY (Display 2)│              │ PRIMARY (Display 0) │
+│ via Presentation    │               │ via Presentation    │
+└─────────────────────┘               └─────────────────────┘
+```
+
+### Input Display Detection
+
+The IME detects which display the input is on using the IME window's display context:
+
+```kotlin
+private fun detectInputDisplayId(): Int {
+    // Method 1: Use IME window's display context (most reliable)
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && secondaryDisplay != null) {
+        window?.window?.let { imeWindow ->
+            val windowDisplay = imeWindow.context.display
+            val windowDisplayId = windowDisplay?.displayId ?: Display.DEFAULT_DISPLAY
+            Log.d(TAG, "IME window display: $windowDisplayId")
+
+            // If the IME window is on a non-default display, that's where the input is
+            if (windowDisplayId != Display.DEFAULT_DISPLAY) {
+                return windowDisplayId
+            }
+        }
+    }
+
+    // Method 2: Check known secondary display packages
+    val editorPackage = currentInputEditorInfo?.packageName
+    val secondaryDisplayPackages = setOf(
+        "com.ayaneo.gamewindow",
+        "com.ayaneo.secondlauncher",
+        "com.ayaneo.home"
+    )
+    if (editorPackage in secondaryDisplayPackages) {
+        return secondaryDisplay?.displayId ?: Display.DEFAULT_DISPLAY
+    }
+
+    return Display.DEFAULT_DISPLAY
+}
 ```
 
 ### Key Components
@@ -168,17 +220,42 @@ class TeleDeckIMEService : InputMethodService() {
     private var secondaryDisplay: Display? = null
 
     override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
-        if (secondaryDisplay != null) {
-            showKeyboardPresentation()  // Show on display 2
+        if (secondaryDisplay == null) {
+            // No secondary display - use primary fallback mode
+            isInPrimaryFallbackMode = true
+            ensurePrimaryViewAttached()
         } else {
-            // Fallback to primary display
+            // Dual display mode - detect input display and show keyboard on opposite
+            val inputOnSecondary = isInputOnSecondaryDisplay()
+
+            if (inputOnSecondary) {
+                // Input on secondary → keyboard on PRIMARY
+                val primaryDisplay = displayManager?.getDisplay(Display.DEFAULT_DISPLAY)
+                hideKeyboardPresentation()
+                showKeyboardPresentation(primaryDisplay)
+            } else {
+                // Input on primary → keyboard on SECONDARY
+                cleanupPrimaryFlutterView()
+                showKeyboardPresentation(secondaryDisplay)
+            }
         }
     }
 
-    private fun showKeyboardPresentation() {
+    private fun showKeyboardPresentation(targetDisplay: Display? = null) {
+        val display = targetDisplay ?: secondaryDisplay ?: return
+
+        // Check if presentation is on correct display
+        presentation?.let { p ->
+            if (p.isShowing && p.display?.displayId == display.displayId) {
+                return // Already showing on correct display
+            }
+            p.dismiss()
+            presentation = null
+        }
+
         // Create WindowContext for TYPE_APPLICATION_OVERLAY
         val presentationContext = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            applicationContext.createDisplayContext(secondaryDisplay)
+            applicationContext.createDisplayContext(display)
                 .createWindowContext(TYPE_APPLICATION_OVERLAY, null)
         } else {
             this
@@ -186,7 +263,7 @@ class TeleDeckIMEService : InputMethodService() {
 
         presentation = VirtualKeyboardPresentation(
             presentationContext,
-            secondaryDisplay,
+            display,
             flutterEngine,
             onEngineReady = { engine -> setupMethodChannelOnEngine(engine) }
         )
@@ -209,7 +286,7 @@ class VirtualKeyboardPresentation(
         super.onCreate(savedInstanceState)
 
         window?.let { window ->
-            // CRITICAL: Prevent focus stealing from primary display
+            // CRITICAL: Prevent focus stealing from the other display
             window.addFlags(
                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
                 WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL
@@ -231,7 +308,7 @@ class VirtualKeyboardPresentation(
 
 ```kotlin
 // MUST have these flags to prevent focus issues:
-FLAG_NOT_FOCUSABLE      // Key events go to primary display app
+FLAG_NOT_FOCUSABLE      // Key events go to the app's display, not keyboard
 FLAG_NOT_TOUCH_MODAL    // Touch events outside keyboard pass through
 
 // Without these flags:
@@ -259,13 +336,39 @@ void imeMain() {
 ## MethodChannel Communication
 
 ```
-Flutter (Keyboard UI) <---> Native (TeleDeckIMEService)
-         │                           │
-    commitText('a')  ───────>  currentInputConnection.commitText()
-    backspace()      ───────>  deleteSurroundingText()
-    enter()          ───────>  sendKeyEvent(KEYCODE_ENTER)
-    moveCursor(n)    ───────>  setSelection()
+Flutter (Keyboard UI) <──────────> Native (TeleDeckIMEService)
+         │                                    │
+    commitText('a')      ───────────>  currentInputConnection.commitText()
+    backspace()          ───────────>  deleteSurroundingText()
+    delete()             ───────────>  deleteSurroundingText(0, 1)
+    enter()              ───────────>  sendKeyEvent(KEYCODE_ENTER)
+    tab()                ───────────>  sendKeyEvent(KEYCODE_TAB)
+    sendKeyEvent(...)    ───────────>  KeyEvent with modifiers (Ctrl, Alt, etc.)
+    hideKeyboard()       ───────────>  hideKeyboardPresentation() + requestHideSelf()
+    openImePicker()      ───────────>  InputMethodManager.showInputMethodPicker()
+    getConnectionStatus  <───────────  currentInputConnection != null
 ```
+
+### Keyboard UI Features
+
+The keyboard header includes:
+
+| Button | Icon | Action |
+|--------|------|--------|
+| IME Picker | `keyboard_alt_outlined` | Opens system IME picker to switch keyboards |
+| Settings | `settings` | Shows keyboard settings info |
+| Hide Keyboard | `keyboard_hide` | Hides keyboard and dismisses presentation |
+
+### Key Input Features
+
+| Feature | Description |
+|---------|-------------|
+| Long press repeat | Hold character keys to repeat input |
+| Haptic feedback | Vibration on key press (configurable) |
+| Shift lock | Double-tap Shift to lock uppercase |
+| Modifier keys | Ctrl, Alt, Super (Windows) key support |
+| Arrow keys | DPAD keycodes sent via sendKeyEvent |
+| Function keys | F1-F12 with media function icons when Fn pressed |
 
 ## Debugging Commands
 
@@ -281,6 +384,9 @@ adb shell dumpsys window windows | grep -i gamewindow
 
 # Check TeleDeck keyboard logs
 adb logcat -s TeleDeckIME:D VirtualKeyboardPresentation:D
+
+# Check input display detection logs
+adb logcat -s TeleDeckIME:D | grep -E "(IME window display|inputOnSecondary|showKeyboardPresentation)"
 
 # Check active IME
 adb shell settings get secure default_input_method
@@ -329,6 +435,14 @@ The gamewindow overlay blocks our keyboard. Current workarounds:
 
 **Solution**: Add `FLAG_NOT_FOCUSABLE | FLAG_NOT_TOUCH_MODAL` to presentation window.
 
+### 4. Input Display Detection
+
+**Status**: Resolved
+
+**Problem**: Could not reliably detect which display the input was coming from.
+
+**Solution**: Use the IME window's display context (`window?.window?.context.display`) which correctly reflects the display where input is requested.
+
 ## Testing Checklist
 
 - [ ] TeleDeck IME is enabled in system settings
@@ -339,19 +453,33 @@ The gamewindow overlay blocks our keyboard. Current workarounds:
 - [ ] Flutter engine starts (check for "imeMain: Starting IME entry point")
 - [ ] Touch events received (check for "dispatchTouchEvent")
 - [ ] Text input works (check for "commitText")
+- [ ] Input on primary → keyboard on secondary
+- [ ] Input on secondary → keyboard on primary
+- [ ] Hide keyboard button works
+- [ ] IME picker button works
 
 ## File Locations
 
 ```
 android/app/src/main/kotlin/app/gsmlg/tele_deck/
-├── TeleDeckIMEService.kt      # Main IME service
-├── VirtualKeyboardPresentation.kt  # Secondary display presentation
+├── TeleDeckIMEService.kt      # Main IME service with dual-display logic
+├── VirtualKeyboardPresentation.kt  # Presentation for any display
 ├── MainActivity.kt            # Launcher app activity
 └── ToggleKeyboardReceiver.kt  # Broadcast receiver for keyboard toggle
 
 lib/
 ├── main.dart                  # Launcher app entry point
 └── main_ime.dart              # Keyboard UI entry point (imeMain)
+
+app_widget/keyboard_widgets/lib/src/
+├── keyboard_view.dart         # Main keyboard layout with header
+├── keyboard_key.dart          # Individual key widget with haptic/repeat
+└── mode_selector_overlay.dart # Keyboard mode selector
+
+app_bloc/keyboard_bloc/lib/src/
+├── keyboard_bloc.dart         # Keyboard state management
+├── keyboard_event.dart        # Keyboard events (key press, modifiers)
+└── keyboard_state.dart        # Keyboard state (shift, ctrl, mode, etc.)
 
 android/app/src/main/
 ├── AndroidManifest.xml        # IME service declaration
@@ -364,3 +492,4 @@ android/app/src/main/
 - [InputMethodService](https://developer.android.com/reference/android/inputmethodservice/InputMethodService)
 - [WindowManager.LayoutParams](https://developer.android.com/reference/android/view/WindowManager.LayoutParams)
 - [Flutter Multiple Entry Points](https://docs.flutter.dev/add-to-app/android/add-flutter-fragment#multiple-flutter-engines)
+- [Android Multi-Display](https://developer.android.com/guide/topics/large-screens/multi-window-support)

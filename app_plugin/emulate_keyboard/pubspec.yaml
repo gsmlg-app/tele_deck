@@ -1,0 +1,27 @@
+name: emulate_keyboard
+description: Physical keyboard emulation plugin with VirtualDeviceManager, uinput, and Bluetooth HID backends.
+version: 0.0.1
+publish_to: none
+
+resolution: workspace
+
+environment:
+  sdk: ^3.8.0
+  flutter: ">=3.3.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  plugin_platform_interface: any
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: any
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: app.gsmlg.emulate_keyboard
+        pluginClass: EmulateKeyboardPlugin

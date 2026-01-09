@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:tele_constants/tele_constants.dart';
 
 /// Base class for settings events
 sealed class SettingsEvent extends Equatable {
@@ -61,4 +62,24 @@ final class SettingsLastVisibilityChanged extends SettingsEvent {
 
   @override
   List<Object?> get props => [isVisible];
+}
+
+/// Keyboard type changed (IME vs Physical)
+final class SettingsKeyboardTypeChanged extends SettingsEvent {
+  final KeyboardType type;
+
+  const SettingsKeyboardTypeChanged(this.type);
+
+  @override
+  List<Object?> get props => [type];
+}
+
+/// Emulation backend changed
+final class SettingsEmulationBackendChanged extends SettingsEvent {
+  final EmulationBackend backend;
+
+  const SettingsEmulationBackendChanged(this.backend);
+
+  @override
+  List<Object?> get props => [backend];
 }

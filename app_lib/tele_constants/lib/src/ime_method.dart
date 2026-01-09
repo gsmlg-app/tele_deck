@@ -10,6 +10,7 @@ class ImeMethod {
   static const String tab = 'tab';
   static const String moveCursor = 'moveCursor';
   static const String sendKeyEvent = 'sendKeyEvent';
+  static const String sendMediaKey = 'sendMediaKey';
   static const String getConnectionStatus = 'getConnectionStatus';
 
   // Native → Flutter (status updates)

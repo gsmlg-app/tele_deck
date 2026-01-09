@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tele_constants/tele_constants.dart';
 import 'package:tele_models/tele_models.dart';
 
 /// Service for persisting and loading app settings
@@ -52,6 +53,8 @@ class SettingsService {
     bool? rememberLastState,
     bool? lastVisibilityState,
     int? keyboardRotation,
+    KeyboardType? keyboardType,
+    EmulationBackend? emulationBackend,
   }) async {
     final updated = current.copyWith(
       showKeyboardOnStartup: showKeyboardOnStartup,
@@ -59,6 +62,8 @@ class SettingsService {
       rememberLastState: rememberLastState,
       lastVisibilityState: lastVisibilityState,
       keyboardRotation: keyboardRotation,
+      keyboardType: keyboardType,
+      emulationBackend: emulationBackend,
     );
 
     await saveSettings(updated);

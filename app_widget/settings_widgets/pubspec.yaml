@@ -26,6 +26,7 @@ dependencies:
   # Internal packages
   tele_theme: any
   tele_models: any
+  tele_constants: any
   settings_bloc: any
   setup_bloc: any
 

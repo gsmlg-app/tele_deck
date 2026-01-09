@@ -7,7 +7,8 @@ plugins {
 
 android {
     namespace = "app.gsmlg.tele_deck"
-    compileSdk = flutter.compileSdkVersion
+    // Need API 34+ for VirtualKeyboard (android.companion.virtual.input)
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {

@@ -1,0 +1,27 @@
+{
+  "buildFiles": [
+    "/Users/gao/Workspace/gsmlg-app/tele_deck/app_plugin/emulate_keyboard/android/src/main/cpp/CMakeLists.txt"
+  ],
+  "cleanCommandsComponents": [
+    [
+      "/Users/gao/Library/Android/sdk/cmake/3.22.1/bin/ninja",
+      "-C",
+      "/Users/gao/Workspace/gsmlg-app/tele_deck/app_plugin/emulate_keyboard/android/.cxx/Debug/39442f4l/arm64-v8a",
+      "clean"
+    ]
+  ],
+  "buildTargetsCommandComponents": [
+    "/Users/gao/Library/Android/sdk/cmake/3.22.1/bin/ninja",
+    "-C",
+    "/Users/gao/Workspace/gsmlg-app/tele_deck/app_plugin/emulate_keyboard/android/.cxx/Debug/39442f4l/arm64-v8a",
+    "{LIST_OF_TARGETS_TO_BUILD}"
+  ],
+  "libraries": {
+    "uinput_keyboard::@6890427a1f51a3e7e1df": {
+      "artifactName": "uinput_keyboard",
+      "abi": "arm64-v8a",
+      "output": "/Users/gao/Workspace/gsmlg-app/tele_deck/build/emulate_keyboard/intermediates/cxx/Debug/39442f4l/obj/arm64-v8a/libuinput_keyboard.so",
+      "runtimeFiles": []
+    }
+  }
+}

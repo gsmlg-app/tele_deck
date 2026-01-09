@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:settings_bloc/settings_bloc.dart';
 import 'package:setup_bloc/setup_bloc.dart';
+import 'package:tele_constants/tele_constants.dart';
 import 'package:tele_theme/tele_theme.dart';
 
 /// BLoC-based settings view for launcher app
@@ -536,3 +537,4 @@ class _RotationSetting extends StatelessWidget {
     }
   }
 }
+

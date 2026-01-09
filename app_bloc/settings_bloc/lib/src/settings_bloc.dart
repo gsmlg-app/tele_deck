@@ -17,6 +17,8 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     on<SettingsRememberLastStateChanged>(_onRememberLastStateChanged);
     on<SettingsPreferredDisplayChanged>(_onPreferredDisplayChanged);
     on<SettingsLastVisibilityChanged>(_onLastVisibilityChanged);
+    on<SettingsKeyboardTypeChanged>(_onKeyboardTypeChanged);
+    on<SettingsEmulationBackendChanged>(_onEmulationBackendChanged);
   }
 
   Future<void> _onLoaded(
@@ -90,5 +92,27 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
       state.settings,
       event.isVisible,
     );
+  }
+
+  Future<void> _onKeyboardTypeChanged(
+    SettingsKeyboardTypeChanged event,
+    Emitter<SettingsState> emit,
+  ) async {
+    final updated = await _settingsService.updateSetting(
+      current: state.settings,
+      keyboardType: event.type,
+    );
+    emit(state.copyWith(settings: updated));
+  }
+
+  Future<void> _onEmulationBackendChanged(
+    SettingsEmulationBackendChanged event,
+    Emitter<SettingsState> emit,
+  ) async {
+    final updated = await _settingsService.updateSetting(
+      current: state.settings,
+      emulationBackend: event.backend,
+    );
+    emit(state.copyWith(settings: updated));
   }
 }

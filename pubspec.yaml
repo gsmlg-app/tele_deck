@@ -26,6 +26,7 @@ workspace:
   - app_plugin/tele_crash_logger
   - app_plugin/tele_presentation
   - app_plugin/tele_ime
+  - app_plugin/emulate_keyboard
   # Third-party packages
   - third_party/form_bloc
   - third_party/flutter_form_bloc
@@ -55,6 +56,9 @@ dependencies:
   cupertino_icons: ^1.0.8
   google_fonts: ^6.2.1
 
+  # Utils
+  package_info_plus: ^8.0.0
+
   # Workspace packages - Core library
   tele_theme: any
   tele_models: any
@@ -73,6 +77,7 @@ dependencies:
   tele_crash_logger: any
   tele_presentation: any
   tele_ime: any
+  emulate_keyboard: any
   # Workspace packages - Third-party
   form_bloc: any
   flutter_form_bloc: any

@@ -14,6 +14,8 @@ dependencies:
   flutter:
     sdk: flutter
   equatable: any
+  tele_constants:
+    path: ../tele_constants
 
 dev_dependencies:
   flutter_test:

@@ -22,6 +22,8 @@ dependencies:
   # Internal packages
   tele_services: any
   tele_constants: any
+  tele_models: any
+  emulate_keyboard: any
 
 dev_dependencies:
   flutter_test:

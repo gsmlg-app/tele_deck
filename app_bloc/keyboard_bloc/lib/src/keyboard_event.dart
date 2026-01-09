@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:tele_constants/tele_constants.dart';
 
 /// Base class for keyboard events
 sealed class KeyboardEvent extends Equatable {
@@ -51,6 +52,32 @@ final class KeyboardFunctionKeyPressed extends KeyboardEvent {
 
   @override
   List<Object?> get props => [number];
+}
+
+/// Media action types for Fn+F1-F12
+enum MediaAction {
+  brightnessDown,  // Fn+F1
+  brightnessUp,    // Fn+F2
+  appSwitch,       // Fn+F3
+  search,          // Fn+F4
+  micMute,         // Fn+F5
+  micUnmute,       // Fn+F6
+  mediaPrevious,   // Fn+F7
+  mediaPlayPause,  // Fn+F8
+  mediaNext,       // Fn+F9
+  volumeMute,      // Fn+F10
+  volumeDown,      // Fn+F11
+  volumeUp,        // Fn+F12
+}
+
+/// Media key pressed (Fn+F1-F12)
+final class KeyboardMediaKeyPressed extends KeyboardEvent {
+  final MediaAction action;
+
+  const KeyboardMediaKeyPressed(this.action);
+
+  @override
+  List<Object?> get props => [action];
 }
 
 /// Arrow direction
@@ -177,4 +204,59 @@ final class KeyboardDisplayModeChanged extends KeyboardEvent {
 
   @override
   List<Object?> get props => [displayMode];
+}
+
+/// Keyboard type changed (IME vs Physical)
+final class KeyboardTypeChanged extends KeyboardEvent {
+  final KeyboardType type;
+
+  const KeyboardTypeChanged(this.type);
+
+  @override
+  List<Object?> get props => [type];
+}
+
+/// Emulation backend changed
+final class KeyboardEmulationBackendChanged extends KeyboardEvent {
+  final EmulationBackend backend;
+
+  const KeyboardEmulationBackendChanged(this.backend);
+
+  @override
+  List<Object?> get props => [backend];
+}
+
+/// Initialize emulation backend
+final class KeyboardEmulationInitialize extends KeyboardEvent {
+  const KeyboardEmulationInitialize();
+}
+
+/// Check availability of a specific backend
+final class KeyboardCheckBackendAvailability extends KeyboardEvent {
+  final EmulationBackend backend;
+
+  const KeyboardCheckBackendAvailability(this.backend);
+
+  @override
+  List<Object?> get props => [backend];
+}
+
+/// Select and connect to a backend
+final class KeyboardSelectBackend extends KeyboardEvent {
+  final EmulationBackend backend;
+
+  const KeyboardSelectBackend(this.backend);
+
+  @override
+  List<Object?> get props => [backend];
+}
+
+/// Show/hide backend selection screen
+final class KeyboardBackendSelectionChanged extends KeyboardEvent {
+  final bool visible;
+
+  const KeyboardBackendSelectionChanged(this.visible);
+
+  @override
+  List<Object?> get props => [visible];
 }

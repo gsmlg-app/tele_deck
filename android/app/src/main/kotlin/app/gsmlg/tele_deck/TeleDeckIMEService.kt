@@ -2,8 +2,11 @@ package app.gsmlg.tele_deck
 
 import android.app.ActivityManager
 import android.content.Context
+import android.content.Intent
+import android.content.SharedPreferences
 import android.hardware.display.DisplayManager
 import android.inputmethodservice.InputMethodService
+import android.media.AudioManager
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
@@ -36,6 +39,12 @@ class TeleDeckIMEService : InputMethodService() {
         private const val CHANNEL_NAME = "tele_deck/ime"
         private const val DISPLAY_DEBOUNCE_MS = 500L
 
+        // SharedPreferences key for keyboard type
+        private const val PREFS_NAME = "FlutterSharedPreferences"
+        private const val KEY_SETTINGS = "flutter.teledeck_settings"
+        private const val KEYBOARD_TYPE_PHYSICAL = "physical"
+        private const val KEYBOARD_TYPE_IME = "ime"
+
         // Singleton reference for the broadcast receiver
         var instance: TeleDeckIMEService? = null
             private set
@@ -52,6 +61,11 @@ class TeleDeckIMEService : InputMethodService() {
     private var isPrimaryViewAttached: Boolean = false
     private var isDartEntrypointExecuted: Boolean = false
 
+    // VirtualKeyboardManager for physical keyboard emulation
+    private var virtualKeyboardManager: VirtualKeyboardManager? = null
+    private var isPhysicalKeyboardMode: Boolean = false
+    private var sharedPrefs: SharedPreferences? = null
+
     // Handler for debouncing display events
     private val mainHandler = Handler(Looper.getMainLooper())
     private var pendingDisplayAddedRunnable: Runnable? = null
@@ -62,8 +76,19 @@ class TeleDeckIMEService : InputMethodService() {
         instance = this
         Log.d(TAG, "TeleDeckIMEService onCreate")
 
+        // Initialize SharedPreferences for reading keyboard type setting
+        sharedPrefs = applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        loadKeyboardTypeSetting()
+
+        // Register listener for settings changes
+        sharedPrefs?.registerOnSharedPreferenceChangeListener(prefsChangeListener)
+
         // Initialize DisplayManager
         displayManager = getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
+
+        // Initialize VirtualKeyboardManager for physical keyboard mode
+        virtualKeyboardManager = VirtualKeyboardManager(this)
+        Log.d(TAG, "VirtualKeyboardManager available: ${virtualKeyboardManager?.isAvailable}")
 
         // Initialize or retrieve cached FlutterEngine
         initFlutterEngine()
@@ -73,6 +98,41 @@ class TeleDeckIMEService : InputMethodService() {
 
         // Check for existing secondary display
         findSecondaryDisplay()
+    }
+
+    /**
+     * Load keyboard type setting from SharedPreferences.
+     * Settings are stored as JSON under the key "flutter.teledeck_settings"
+     */
+    private fun loadKeyboardTypeSetting() {
+        try {
+            val settingsJson = sharedPrefs?.getString(KEY_SETTINGS, null)
+            if (settingsJson != null) {
+                val json = org.json.JSONObject(settingsJson)
+                val keyboardType = json.optString("keyboardType", KEYBOARD_TYPE_IME)
+                isPhysicalKeyboardMode = (keyboardType == KEYBOARD_TYPE_PHYSICAL)
+                Log.d(TAG, "Keyboard type loaded from JSON: $keyboardType, isPhysicalMode: $isPhysicalKeyboardMode")
+            } else {
+                isPhysicalKeyboardMode = false
+                Log.d(TAG, "No settings found, using default IME mode")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to parse settings JSON", e)
+            isPhysicalKeyboardMode = false
+        }
+    }
+
+    /**
+     * SharedPreferences change listener to detect keyboard type changes from launcher app
+     */
+    private val prefsChangeListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+        if (key == KEY_SETTINGS) {
+            loadKeyboardTypeSetting()
+            // Initialize VirtualKeyboard if switching to physical mode
+            if (isPhysicalKeyboardMode && virtualKeyboardManager?.isAvailable == true) {
+                virtualKeyboardManager?.initialize(secondaryDisplay)
+            }
+        }
     }
 
     private fun initFlutterEngine() {
@@ -190,6 +250,12 @@ class TeleDeckIMEService : InputMethodService() {
                         hideKeyboard()
                         result.success(true)
                     }
+                    "sendMediaKey" -> {
+                        val action = call.arguments as? String ?: ""
+                        Log.d(TAG, "MethodChannel sendMediaKey: $action")
+                        sendMediaKey(action)
+                        result.success(true)
+                    }
                     else -> {
                         result.notImplemented()
                     }
@@ -251,6 +317,26 @@ class TeleDeckIMEService : InputMethodService() {
     }
 
     private fun sendKeyEventToApp(keyCode: Int, metaState: Int) {
+        // Check if we should use VirtualKeyboard (physical mode)
+        if (isPhysicalKeyboardMode && virtualKeyboardManager?.isAvailable == true) {
+            Log.d(TAG, "sendKeyEventToApp via VirtualKeyboard: keyCode=$keyCode, metaState=$metaState")
+
+            // Ensure VirtualKeyboard is initialized
+            if (virtualKeyboardManager?.initialize(secondaryDisplay) == true) {
+                // Parse metaState into individual modifiers
+                val shift = (metaState and android.view.KeyEvent.META_SHIFT_ON) != 0
+                val ctrl = (metaState and android.view.KeyEvent.META_CTRL_ON) != 0
+                val alt = (metaState and android.view.KeyEvent.META_ALT_ON) != 0
+                val meta = (metaState and android.view.KeyEvent.META_META_ON) != 0
+
+                virtualKeyboardManager?.sendKeyEventWithModifiers(keyCode, shift, ctrl, alt, meta)
+                return
+            } else {
+                Log.w(TAG, "VirtualKeyboard initialization failed, falling back to InputConnection")
+            }
+        }
+
+        // Fallback: Use InputConnection (IME mode or VirtualKeyboard unavailable)
         currentInputConnection?.let { ic ->
             val downEvent = android.view.KeyEvent(
                 System.currentTimeMillis(),
@@ -271,6 +357,95 @@ class TeleDeckIMEService : InputMethodService() {
             ic.sendKeyEvent(downEvent)
             ic.sendKeyEvent(upEvent)
         }
+    }
+
+    /**
+     * Send media key actions for Fn+F1-F12 functionality.
+     * Maps action names to system-level media controls.
+     */
+    private fun sendMediaKey(action: String) {
+        val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+
+        when (action) {
+            // Volume controls - use AudioManager directly for immediate effect
+            "volumeUp" -> {
+                audioManager.adjustVolume(AudioManager.ADJUST_RAISE, AudioManager.FLAG_SHOW_UI)
+            }
+            "volumeDown" -> {
+                audioManager.adjustVolume(AudioManager.ADJUST_LOWER, AudioManager.FLAG_SHOW_UI)
+            }
+            "volumeMute" -> {
+                audioManager.adjustVolume(AudioManager.ADJUST_TOGGLE_MUTE, AudioManager.FLAG_SHOW_UI)
+            }
+
+            // Media playback controls - send key events via broadcast
+            "mediaPlayPause" -> {
+                sendMediaKeyEvent(android.view.KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE)
+            }
+            "mediaPrevious" -> {
+                sendMediaKeyEvent(android.view.KeyEvent.KEYCODE_MEDIA_PREVIOUS)
+            }
+            "mediaNext" -> {
+                sendMediaKeyEvent(android.view.KeyEvent.KEYCODE_MEDIA_NEXT)
+            }
+
+            // Brightness controls - send key events (system handles them)
+            "brightnessDown" -> {
+                sendMediaKeyEvent(android.view.KeyEvent.KEYCODE_BRIGHTNESS_DOWN)
+            }
+            "brightnessUp" -> {
+                sendMediaKeyEvent(android.view.KeyEvent.KEYCODE_BRIGHTNESS_UP)
+            }
+
+            // App switch
+            "appSwitch" -> {
+                sendMediaKeyEvent(android.view.KeyEvent.KEYCODE_APP_SWITCH)
+            }
+
+            // Search
+            "search" -> {
+                sendMediaKeyEvent(android.view.KeyEvent.KEYCODE_SEARCH)
+            }
+
+            // Microphone controls (API 28+)
+            "micMute", "micUnmute" -> {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                    // Toggle mic mute state
+                    val isMuted = audioManager.isMicrophoneMute
+                    audioManager.isMicrophoneMute = !isMuted
+                    Log.d(TAG, "Microphone mute toggled: ${!isMuted}")
+                }
+            }
+
+            else -> {
+                Log.w(TAG, "Unknown media action: $action")
+            }
+        }
+    }
+
+    /**
+     * Send a media key event via broadcast for system-wide handling.
+     */
+    private fun sendMediaKeyEvent(keyCode: Int) {
+        val downTime = System.currentTimeMillis()
+
+        // Create and send KEY_DOWN event
+        val downEvent = android.view.KeyEvent(downTime, downTime,
+            android.view.KeyEvent.ACTION_DOWN, keyCode, 0)
+        val downIntent = Intent(Intent.ACTION_MEDIA_BUTTON).apply {
+            putExtra(Intent.EXTRA_KEY_EVENT, downEvent)
+        }
+        sendOrderedBroadcast(downIntent, null)
+
+        // Create and send KEY_UP event
+        val upEvent = android.view.KeyEvent(downTime, System.currentTimeMillis(),
+            android.view.KeyEvent.ACTION_UP, keyCode, 0)
+        val upIntent = Intent(Intent.ACTION_MEDIA_BUTTON).apply {
+            putExtra(Intent.EXTRA_KEY_EVENT, upEvent)
+        }
+        sendOrderedBroadcast(upIntent, null)
+
+        Log.d(TAG, "Sent media key event: $keyCode")
     }
 
     /**
@@ -948,6 +1123,13 @@ class TeleDeckIMEService : InputMethodService() {
         pendingDisplayRemovedRunnable?.let { mainHandler.removeCallbacks(it) }
         pendingDisplayAddedRunnable = null
         pendingDisplayRemovedRunnable = null
+
+        // Clean up SharedPreferences listener
+        sharedPrefs?.unregisterOnSharedPreferenceChangeListener(prefsChangeListener)
+
+        // Clean up VirtualKeyboardManager
+        virtualKeyboardManager?.cleanup()
+        virtualKeyboardManager = null
 
         // Clean up display listener
         displayManager?.unregisterDisplayListener(displayListener)

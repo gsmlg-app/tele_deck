@@ -167,6 +167,37 @@ class _KeyboardHeader extends StatelessWidget {
                 ),
               ),
               const Spacer(),
+              // Keyboard type indicator
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 6,
+                ),
+                margin: const EdgeInsets.only(right: 8),
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: state.keyboardType == KeyboardType.physical
+                        ? const Color(TeleDeckColors.neonMagenta)
+                        : const Color(TeleDeckColors.neonCyan).withValues(alpha: 0.5),
+                    width: 1,
+                  ),
+                  borderRadius: BorderRadius.circular(4),
+                  color: state.keyboardType == KeyboardType.physical
+                      ? const Color(TeleDeckColors.neonMagenta).withValues(alpha: 0.15)
+                      : Colors.transparent,
+                ),
+                child: Text(
+                  state.keyboardType == KeyboardType.physical ? 'PHY' : 'IME',
+                  style: GoogleFonts.robotoMono(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: state.keyboardType == KeyboardType.physical
+                        ? const Color(TeleDeckColors.neonMagenta)
+                        : const Color(TeleDeckColors.textPrimary).withValues(alpha: 0.7),
+                    letterSpacing: 1,
+                  ),
+                ),
+              ),
               // Connection indicator
               Container(
                 padding: const EdgeInsets.symmetric(
@@ -306,6 +337,11 @@ class _KeyboardBody extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<KeyboardBloc, KeyboardState>(
       builder: (context, state) {
+        // Show backend selection screen if enabled
+        if (state.showBackendSelection) {
+          return const _BackendSelectionView();
+        }
+
         Widget keyboardContent;
         switch (state.mode) {
           case KeyboardMode.numpad:
@@ -313,7 +349,6 @@ class _KeyboardBody extends StatelessWidget {
           case KeyboardMode.emoji:
             keyboardContent = const _EmojiLayout();
           case KeyboardMode.standard:
-          default:
             keyboardContent = const _StandardLayout();
         }
 
@@ -325,6 +360,313 @@ class _KeyboardBody extends StatelessWidget {
           ],
         );
       },
+    );
+  }
+}
+
+/// Backend selection view for choosing connection method
+class _BackendSelectionView extends StatelessWidget {
+  const _BackendSelectionView();
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<KeyboardBloc, KeyboardState>(
+      builder: (context, state) {
+        return Container(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Title
+              ShaderMask(
+                shaderCallback: (bounds) => const LinearGradient(
+                  colors: [
+                    Color(TeleDeckColors.neonCyan),
+                    Color(TeleDeckColors.neonMagenta),
+                  ],
+                ).createShader(bounds),
+                child: Text(
+                  'SELECT CONNECTION METHOD',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.robotoMono(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    letterSpacing: 2,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Choose how to emulate keyboard input',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.robotoMono(
+                  fontSize: 11,
+                  color: const Color(TeleDeckColors.textPrimary).withValues(alpha: 0.6),
+                ),
+              ),
+              const SizedBox(height: 16),
+              // Backend options
+              Expanded(
+                child: Column(
+                  children: [
+                    _BackendOptionCard(
+                      title: 'VirtualDeviceManager',
+                      description: 'Android 14+ API. Official system method.',
+                      icon: Icons.smartphone,
+                      availability: state.virtualDeviceAvailability,
+                      statusMessage: state.virtualDeviceStatus,
+                      onCheck: () => context.read<KeyboardBloc>().add(
+                        const KeyboardCheckBackendAvailability(
+                          EmulationBackend.virtualDevice,
+                        ),
+                      ),
+                      onSelect: state.virtualDeviceAvailability ==
+                              BackendAvailability.available
+                          ? () => context.read<KeyboardBloc>().add(
+                                const KeyboardSelectBackend(
+                                  EmulationBackend.virtualDevice,
+                                ),
+                              )
+                          : null,
+                    ),
+                    const SizedBox(height: 8),
+                    _BackendOptionCard(
+                      title: 'uinput',
+                      description: 'Kernel-level input. Requires root access.',
+                      icon: Icons.terminal,
+                      availability: state.uinputAvailability,
+                      statusMessage: state.uinputStatus,
+                      onCheck: () => context.read<KeyboardBloc>().add(
+                        const KeyboardCheckBackendAvailability(
+                          EmulationBackend.uinput,
+                        ),
+                      ),
+                      onSelect: state.uinputAvailability ==
+                              BackendAvailability.available
+                          ? () => context.read<KeyboardBloc>().add(
+                                const KeyboardSelectBackend(
+                                  EmulationBackend.uinput,
+                                ),
+                              )
+                          : null,
+                    ),
+                    const SizedBox(height: 8),
+                    _BackendOptionCard(
+                      title: 'Bluetooth HID',
+                      description: 'Bluetooth keyboard emulation.',
+                      icon: Icons.bluetooth,
+                      availability: state.bluetoothHidAvailability,
+                      statusMessage: state.bluetoothHidStatus,
+                      onCheck: () => context.read<KeyboardBloc>().add(
+                        const KeyboardCheckBackendAvailability(
+                          EmulationBackend.bluetoothHid,
+                        ),
+                      ),
+                      onSelect: state.bluetoothHidAvailability ==
+                              BackendAvailability.available
+                          ? () => context.read<KeyboardBloc>().add(
+                                const KeyboardSelectBackend(
+                                  EmulationBackend.bluetoothHid,
+                                ),
+                              )
+                          : null,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// Card widget for displaying a backend option
+class _BackendOptionCard extends StatelessWidget {
+  final String title;
+  final String description;
+  final IconData icon;
+  final BackendAvailability availability;
+  final String statusMessage;
+  final VoidCallback? onCheck;
+  final VoidCallback? onSelect;
+  final bool isDisabled;
+
+  const _BackendOptionCard({
+    required this.title,
+    required this.description,
+    required this.icon,
+    required this.availability,
+    required this.statusMessage,
+    this.onCheck,
+    this.onSelect,
+    this.isDisabled = false,
+  });
+
+  Color _getStatusColor() {
+    switch (availability) {
+      case BackendAvailability.unknown:
+        return const Color(TeleDeckColors.textPrimary).withValues(alpha: 0.6);
+      case BackendAvailability.checking:
+        return const Color(TeleDeckColors.neonCyan);
+      case BackendAvailability.available:
+        return Colors.green;
+      case BackendAvailability.unavailable:
+        return Colors.red;
+      case BackendAvailability.disabled:
+        return const Color(TeleDeckColors.textPrimary).withValues(alpha: 0.3);
+    }
+  }
+
+  String _getStatusText() {
+    switch (availability) {
+      case BackendAvailability.unknown:
+        return 'Tap to check';
+      case BackendAvailability.checking:
+        return 'Checking...';
+      case BackendAvailability.available:
+        return 'Available';
+      case BackendAvailability.unavailable:
+        return 'Unavailable';
+      case BackendAvailability.disabled:
+        return 'Disabled';
+    }
+  }
+
+  IconData _getStatusIcon() {
+    switch (availability) {
+      case BackendAvailability.unknown:
+        return Icons.help_outline;
+      case BackendAvailability.checking:
+        return Icons.sync;
+      case BackendAvailability.available:
+        return Icons.check_circle;
+      case BackendAvailability.unavailable:
+        return Icons.cancel;
+      case BackendAvailability.disabled:
+        return Icons.block;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isAvailable = availability == BackendAvailability.available;
+    final isChecking = availability == BackendAvailability.checking;
+    final borderColor = isDisabled
+        ? const Color(TeleDeckColors.textPrimary).withValues(alpha: 0.2)
+        : isAvailable
+            ? Colors.green.withValues(alpha: 0.5)
+            : const Color(TeleDeckColors.neonCyan).withValues(alpha: 0.3);
+
+    return Expanded(
+      child: GestureDetector(
+        onTap: isDisabled
+            ? null
+            : (isAvailable ? onSelect : (isChecking ? null : onCheck)),
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: const Color(TeleDeckColors.secondaryBackground),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: borderColor, width: 1),
+            boxShadow: isAvailable
+                ? [
+                    BoxShadow(
+                      color: Colors.green.withValues(alpha: 0.2),
+                      blurRadius: 8,
+                    ),
+                  ]
+                : null,
+          ),
+          child: Row(
+            children: [
+              // Icon
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: isDisabled
+                      ? const Color(TeleDeckColors.textPrimary)
+                          .withValues(alpha: 0.1)
+                      : const Color(TeleDeckColors.neonCyan)
+                          .withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  icon,
+                  color: isDisabled
+                      ? const Color(TeleDeckColors.textPrimary)
+                          .withValues(alpha: 0.5)
+                      : const Color(TeleDeckColors.neonCyan),
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              // Title and description
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      title,
+                      style: GoogleFonts.robotoMono(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: isDisabled
+                            ? const Color(TeleDeckColors.textPrimary)
+                                .withValues(alpha: 0.5)
+                            : const Color(TeleDeckColors.textPrimary),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      description,
+                      style: GoogleFonts.robotoMono(
+                        fontSize: 9,
+                        color: const Color(TeleDeckColors.textPrimary)
+                            .withValues(alpha: isDisabled ? 0.3 : 0.6),
+                      ),
+                    ),
+                    if (statusMessage.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        statusMessage,
+                        style: GoogleFonts.robotoMono(
+                          fontSize: 9,
+                          color: _getStatusColor(),
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              // Status indicator
+              Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    _getStatusIcon(),
+                    color: _getStatusColor(),
+                    size: 20,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    _getStatusText(),
+                    style: GoogleFonts.robotoMono(
+                      fontSize: 8,
+                      color: _getStatusColor(),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -390,6 +732,22 @@ class _FunctionRow extends StatelessWidget {
     'F12': Icons.volume_up,          // Volume up
   };
 
+  // Media actions for F1-F12 when Fn is pressed
+  static const _fnMediaActions = {
+    'F1': MediaAction.brightnessDown,
+    'F2': MediaAction.brightnessUp,
+    'F3': MediaAction.appSwitch,
+    'F4': MediaAction.search,
+    'F5': MediaAction.micMute,
+    'F6': MediaAction.micUnmute,
+    'F7': MediaAction.mediaPrevious,
+    'F8': MediaAction.mediaPlayPause,
+    'F9': MediaAction.mediaNext,
+    'F10': MediaAction.volumeMute,
+    'F11': MediaAction.volumeDown,
+    'F12': MediaAction.volumeUp,
+  };
+
   @override
   Widget build(BuildContext context) {
     final bloc = context.read<KeyboardBloc>();
@@ -414,11 +772,20 @@ class _FunctionRow extends StatelessWidget {
         } else if (key.startsWith('F')) {
           final num = int.parse(key.substring(1));
           final mediaIcon = _fnMediaIcons[key];
+          final mediaAction = _fnMediaActions[key];
           return KeyboardKey(
             label: key,
             displayLabel: fnEnabled ? null : key,
             icon: fnEnabled ? mediaIcon : null,
-            onTap: () => bloc.add(KeyboardFunctionKeyPressed(num)),
+            onTap: () {
+              if (fnEnabled && mediaAction != null) {
+                // Send media action when Fn is enabled
+                bloc.add(KeyboardMediaKeyPressed(mediaAction));
+              } else {
+                // Send regular function key
+                bloc.add(KeyboardFunctionKeyPressed(num));
+              }
+            },
             isSpecial: true,
             accentColor: fnEnabled
                 ? const Color(TeleDeckColors.neonMagenta)

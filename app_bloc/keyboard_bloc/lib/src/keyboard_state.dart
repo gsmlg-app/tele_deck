@@ -1,6 +1,21 @@
 import 'package:equatable/equatable.dart';
+import 'package:tele_constants/tele_constants.dart';
 
 import 'keyboard_event.dart';
+
+/// Backend availability status
+enum BackendAvailability {
+  /// Not yet checked
+  unknown,
+  /// Currently checking availability
+  checking,
+  /// Available and can be used
+  available,
+  /// Not available on this device
+  unavailable,
+  /// Disabled (not implemented yet)
+  disabled,
+}
 
 /// Keyboard state
 class KeyboardState extends Equatable {
@@ -37,6 +52,35 @@ class KeyboardState extends Equatable {
   /// Display mode (secondary/primary_fallback)
   final String displayMode;
 
+  /// Keyboard input type (ime or physical)
+  final KeyboardType keyboardType;
+
+  /// Emulation backend for physical keyboard mode
+  final EmulationBackend emulationBackend;
+
+  /// Whether the emulation backend is initialized
+  final bool isEmulationInitialized;
+
+  /// Emulation backend status message
+  final String emulationStatus;
+
+  /// Whether to show backend selection screen
+  final bool showBackendSelection;
+
+  /// VirtualDeviceManager availability status
+  final BackendAvailability virtualDeviceAvailability;
+
+  /// uinput availability status (root check)
+  final BackendAvailability uinputAvailability;
+
+  /// Bluetooth HID availability status
+  final BackendAvailability bluetoothHidAvailability;
+
+  /// Status message for each backend
+  final String virtualDeviceStatus;
+  final String uinputStatus;
+  final String bluetoothHidStatus;
+
   const KeyboardState({
     this.isConnected = false,
     this.mode = KeyboardMode.standard,
@@ -49,6 +93,17 @@ class KeyboardState extends Equatable {
     this.superEnabled = false,
     this.fnEnabled = false,
     this.displayMode = 'primary_fallback',
+    this.keyboardType = KeyboardType.ime,
+    this.emulationBackend = EmulationBackend.virtualDevice,
+    this.isEmulationInitialized = false,
+    this.emulationStatus = '',
+    this.showBackendSelection = true,
+    this.virtualDeviceAvailability = BackendAvailability.unknown,
+    this.uinputAvailability = BackendAvailability.unknown,
+    this.bluetoothHidAvailability = BackendAvailability.unknown,
+    this.virtualDeviceStatus = '',
+    this.uinputStatus = '',
+    this.bluetoothHidStatus = '',
   });
 
   /// Initial state
@@ -73,6 +128,17 @@ class KeyboardState extends Equatable {
     bool? superEnabled,
     bool? fnEnabled,
     String? displayMode,
+    KeyboardType? keyboardType,
+    EmulationBackend? emulationBackend,
+    bool? isEmulationInitialized,
+    String? emulationStatus,
+    bool? showBackendSelection,
+    BackendAvailability? virtualDeviceAvailability,
+    BackendAvailability? uinputAvailability,
+    BackendAvailability? bluetoothHidAvailability,
+    String? virtualDeviceStatus,
+    String? uinputStatus,
+    String? bluetoothHidStatus,
   }) {
     return KeyboardState(
       isConnected: isConnected ?? this.isConnected,
@@ -86,6 +152,17 @@ class KeyboardState extends Equatable {
       superEnabled: superEnabled ?? this.superEnabled,
       fnEnabled: fnEnabled ?? this.fnEnabled,
       displayMode: displayMode ?? this.displayMode,
+      keyboardType: keyboardType ?? this.keyboardType,
+      emulationBackend: emulationBackend ?? this.emulationBackend,
+      isEmulationInitialized: isEmulationInitialized ?? this.isEmulationInitialized,
+      emulationStatus: emulationStatus ?? this.emulationStatus,
+      showBackendSelection: showBackendSelection ?? this.showBackendSelection,
+      virtualDeviceAvailability: virtualDeviceAvailability ?? this.virtualDeviceAvailability,
+      uinputAvailability: uinputAvailability ?? this.uinputAvailability,
+      bluetoothHidAvailability: bluetoothHidAvailability ?? this.bluetoothHidAvailability,
+      virtualDeviceStatus: virtualDeviceStatus ?? this.virtualDeviceStatus,
+      uinputStatus: uinputStatus ?? this.uinputStatus,
+      bluetoothHidStatus: bluetoothHidStatus ?? this.bluetoothHidStatus,
     );
   }
 
@@ -102,5 +179,16 @@ class KeyboardState extends Equatable {
     superEnabled,
     fnEnabled,
     displayMode,
+    keyboardType,
+    emulationBackend,
+    isEmulationInitialized,
+    emulationStatus,
+    showBackendSelection,
+    virtualDeviceAvailability,
+    uinputAvailability,
+    bluetoothHidAvailability,
+    virtualDeviceStatus,
+    uinputStatus,
+    bluetoothHidStatus,
   ];
 }

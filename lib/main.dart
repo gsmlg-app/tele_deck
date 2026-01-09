@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:keyboard_bloc/keyboard_bloc.dart';
 import 'package:settings_bloc/settings_bloc.dart';
 import 'package:setup_bloc/setup_bloc.dart';
 import 'package:tele_deck/app.dart';
@@ -29,19 +29,20 @@ void main() {
 
   final settingsService = SettingsService();
 
+  // Create blocs
+  final keyboardBloc = KeyboardBloc(imeService: imeChannelService);
+  final settingsBloc = SettingsBloc(settingsService: settingsService)
+    ..add(const SettingsLoaded());
+  final setupBloc = SetupBloc(imeService: imeChannelService)
+    ..add(const SetupCheckRequested());
+
   runApp(
-    MultiBlocProvider(
-      providers: [
-        BlocProvider<SettingsBloc>(
-          create: (context) =>
-              SettingsBloc(settingsService: settingsService)..add(const SettingsLoaded()),
-        ),
-        BlocProvider<SetupBloc>(
-          create: (context) =>
-              SetupBloc(imeService: imeChannelService)..add(const SetupCheckRequested()),
-        ),
-      ],
-      child: TeleDeckLauncherApp(imeChannelService: imeChannelService),
+    TeleDeckLauncherApp(
+      imeChannelService: imeChannelService,
+      settingsService: settingsService,
+      keyboardBloc: keyboardBloc,
+      settingsBloc: settingsBloc,
+      setupBloc: setupBloc,
     ),
   );
 }

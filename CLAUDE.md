@@ -304,6 +304,17 @@ textPrimary        = 0xFFE0E0E0   // Primary text
 textSecondary      = 0xFFA0A0A0   // Secondary text
 ```
 
+## Device-Specific Documentation
+
+For detailed implementation notes on specific hardware devices, see:
+
+- **Ayaneo Pocket DS**: [docs/devices/ayaneo-pocket-ds.md](docs/devices/ayaneo-pocket-ds.md)
+  - Dual-display architecture (Display 0: 1920x1080, Display 2: 1024x768)
+  - Bidirectional keyboard placement (keyboard on opposite display from input)
+  - Gamewindow overlay blocking workarounds
+  - Input display detection using IME window context
+  - Debugging commands for dual-display issues
+
 ## Active Technologies
 
 - Dart 3.8+ / Kotlin (Android) + Flutter 3.x

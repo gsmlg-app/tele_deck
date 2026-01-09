@@ -1,8 +1,11 @@
+import 'package:common_widgets/common_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:settings_bloc/settings_bloc.dart';
 import 'package:settings_ui/settings_ui.dart';
+import 'package:tele_constants/tele_constants.dart';
 import 'package:tele_theme/tele_theme.dart';
 
 /// Settings screen using settings_ui package
@@ -61,6 +64,27 @@ class SettingScreen extends StatelessWidget {
                 _buildPhysicalButtonsTile(context),
               ],
             ),
+            // LOGS section
+            SettingsSection(
+              title: Text(
+                'LOGS',
+                style: GoogleFonts.robotoMono(
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 2,
+                ),
+              ),
+              tiles: [
+                SettingsTile.navigation(
+                  leading: const Icon(Icons.bug_report_outlined),
+                  title: Text('Crash Logs', style: GoogleFonts.robotoMono()),
+                  value: Text(
+                    'View application crash logs',
+                    style: GoogleFonts.robotoMono(fontSize: 12),
+                  ),
+                  onPressed: (context) => _showCrashLogs(context),
+                ),
+              ],
+            ),
             // ABOUT section
             SettingsSection(
               title: Text(
@@ -71,20 +95,34 @@ class SettingScreen extends StatelessWidget {
                 ),
               ),
               tiles: [
-                SettingsTile(
-                  leading: const Icon(Icons.info_outline),
-                  title: Text('TeleDeck', style: GoogleFonts.robotoMono()),
-                  value: Text(
-                    'System IME Keyboard v1.0.0',
-                    style: GoogleFonts.robotoMono(fontSize: 12),
-                  ),
-                ),
-                SettingsTile(
-                  leading: const Icon(Icons.code),
-                  title: Text('Source Code', style: GoogleFonts.robotoMono()),
-                  value: Text(
-                    'github.com/gsmlg-app/tele_deck',
-                    style: GoogleFonts.robotoMono(fontSize: 12),
+                CustomSettingsTile(
+                  child: FutureBuilder<PackageInfo>(
+                    future: PackageInfo.fromPlatform(),
+                    builder: (context, snapshot) {
+                      final version = snapshot.hasData
+                          ? 'v${snapshot.data!.version}'
+                          : 'v...';
+                      return ListTile(
+                        leading: const Icon(
+                          Icons.info_outline,
+                          color: Color(TeleDeckColors.neonCyan),
+                        ),
+                        title: Text(
+                          'TeleDeck $version',
+                          style: GoogleFonts.robotoMono(
+                            color: const Color(TeleDeckColors.textPrimary),
+                          ),
+                        ),
+                        subtitle: Text(
+                          'System IME Keyboard\nEmulate Hardware Keyboard',
+                          style: GoogleFonts.robotoMono(
+                            fontSize: 12,
+                            color: const Color(TeleDeckColors.textPrimary)
+                                .withValues(alpha: 0.7),
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ),
               ],
@@ -267,4 +305,14 @@ class SettingScreen extends StatelessWidget {
       _ => '0° (Default)',
     };
   }
+
+  void _showCrashLogs(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const CrashLogViewer(showBackButton: true),
+      ),
+    );
+  }
 }
+

@@ -35,17 +35,9 @@ void imeMain() {
   // ignore: avoid_print
   print('imeMain: About to call runApp');
   runApp(
-    MultiBlocProvider(
-      providers: [
-        BlocProvider<KeyboardBloc>(
-          create: (context) => KeyboardBloc(imeService: imeChannelService),
-        ),
-        BlocProvider<SettingsBloc>(
-          create: (context) =>
-              SettingsBloc(settingsService: settingsService)..add(const SettingsLoaded()),
-        ),
-      ],
-      child: TeleDeckKeyboardApp(imeChannelService: imeChannelService),
+    TeleDeckKeyboardApp(
+      imeChannelService: imeChannelService,
+      settingsService: settingsService,
     ),
   );
   // ignore: avoid_print
@@ -55,10 +47,12 @@ void imeMain() {
 /// Keyboard app - renders on secondary display (or primary fallback) via IME Service
 class TeleDeckKeyboardApp extends StatefulWidget {
   final ImeChannelService imeChannelService;
+  final SettingsService settingsService;
 
   const TeleDeckKeyboardApp({
     super.key,
     required this.imeChannelService,
+    required this.settingsService,
   });
 
   @override
@@ -66,9 +60,16 @@ class TeleDeckKeyboardApp extends StatefulWidget {
 }
 
 class _TeleDeckKeyboardAppState extends State<TeleDeckKeyboardApp> {
+  late final KeyboardBloc _keyboardBloc;
+  late final SettingsBloc _settingsBloc;
+
   @override
   void initState() {
     super.initState();
+    // Create blocs here so we can set up callbacks with them
+    _keyboardBloc = KeyboardBloc(imeService: widget.imeChannelService);
+    _settingsBloc = SettingsBloc(settingsService: widget.settingsService)
+      ..add(const SettingsLoaded());
     _setupIMECallbacks();
   }
 
@@ -76,14 +77,14 @@ class _TeleDeckKeyboardAppState extends State<TeleDeckKeyboardApp> {
     // Listen for connection status changes
     widget.imeChannelService.onConnectionStatusChanged = (isConnected) {
       if (mounted) {
-        context.read<KeyboardBloc>().add(KeyboardConnectionChanged(isConnected));
+        _keyboardBloc.add(KeyboardConnectionChanged(isConnected));
       }
     };
 
     // Listen for display mode changes
     widget.imeChannelService.onDisplayModeChanged = (mode) {
       if (mounted) {
-        context.read<KeyboardBloc>().add(KeyboardDisplayModeChanged(mode));
+        _keyboardBloc.add(KeyboardDisplayModeChanged(mode));
       }
     };
   }
@@ -91,6 +92,8 @@ class _TeleDeckKeyboardAppState extends State<TeleDeckKeyboardApp> {
   @override
   void dispose() {
     widget.imeChannelService.dispose();
+    _keyboardBloc.close();
+    _settingsBloc.close();
     super.dispose();
   }
 
@@ -105,11 +108,19 @@ class _TeleDeckKeyboardAppState extends State<TeleDeckKeyboardApp> {
       builder: (context, child) {
         // ignore: avoid_print
         print('TeleDeckKeyboardApp: MaterialApp builder called');
-        return MediaQuery(
-          data: MediaQuery.of(context).copyWith(
-            textScaler: TextScaler.noScaling,
+        // Provide blocs inside MaterialApp's builder so they're available
+        // to all widgets in the Navigator
+        return MultiBlocProvider(
+          providers: [
+            BlocProvider<KeyboardBloc>.value(value: _keyboardBloc),
+            BlocProvider<SettingsBloc>.value(value: _settingsBloc),
+          ],
+          child: MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              textScaler: TextScaler.noScaling,
+            ),
+            child: child!,
           ),
-          child: child!,
         );
       },
       home: const KeyboardScreen(),

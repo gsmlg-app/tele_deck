@@ -20,6 +20,7 @@ dependencies:
   equatable: any
 
   # Internal packages
+  tele_constants: any
   tele_models: any
   tele_services: any
 

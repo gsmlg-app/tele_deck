@@ -115,6 +115,15 @@ class ImeChannelService {
     }
   }
 
+  /// Send a media key action (brightness, volume, media controls)
+  Future<void> sendMediaKey(String action) async {
+    try {
+      await _channel.invokeMethod(ImeMethod.sendMediaKey, action);
+    } catch (e) {
+      debugPrint('Failed to send media key: $e');
+    }
+  }
+
   /// Get current connection status
   Future<bool> getConnectionStatus() async {
     try {

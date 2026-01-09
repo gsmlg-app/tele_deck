@@ -3,6 +3,9 @@
     <!-- Required for secondary display presentation -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
 
+    <!-- Required for VirtualDeviceManager to emulate physical keyboard (Android 12+) -->
+    <uses-permission android:name="android.permission.CREATE_VIRTUAL_DEVICE"/>
+
     <application
         android:label="TeleDeck"
         android:name="${applicationName}"

@@ -3,7 +3,7 @@ import 'package:flutter_adaptive_scaffold/flutter_adaptive_scaffold.dart';
 import 'package:tele_theme/tele_theme.dart';
 
 import '../home/home_screen.dart';
-import '../logs/log_screen.dart';
+import '../keyboard/keyboard_screen.dart';
 import '../settings/setting_screen.dart';
 
 /// Main shell screen with adaptive navigation (bottom nav / rail)
@@ -22,14 +22,14 @@ class _ShellScreenState extends State<ShellScreen> {
 
   static const _destinations = <NavigationDestination>[
     NavigationDestination(
-      icon: Icon(Icons.home_outlined),
-      selectedIcon: Icon(Icons.home),
-      label: 'Home',
+      icon: Icon(Icons.input_outlined),
+      selectedIcon: Icon(Icons.input),
+      label: 'IME',
     ),
     NavigationDestination(
-      icon: Icon(Icons.bug_report_outlined),
-      selectedIcon: Icon(Icons.bug_report),
-      label: 'Logs',
+      icon: Icon(Icons.keyboard_outlined),
+      selectedIcon: Icon(Icons.keyboard),
+      label: 'Keyboard',
     ),
     NavigationDestination(
       icon: Icon(Icons.settings_outlined),
@@ -59,7 +59,7 @@ class _ShellScreenState extends State<ShellScreen> {
       color: const Color(TeleDeckColors.darkBackground),
       child: switch (_selectedIndex) {
         0 => const HomeScreen(),
-        1 => const LogScreen(),
+        1 => const KeyboardScreen(),
         2 => const SettingScreen(),
         _ => const HomeScreen(),
       },
