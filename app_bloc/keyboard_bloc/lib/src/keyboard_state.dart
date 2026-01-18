@@ -81,6 +81,9 @@ class KeyboardState extends Equatable {
   final String uinputStatus;
   final String bluetoothHidStatus;
 
+  /// Whether to show the fullscreen virtual keyboard
+  final bool showVirtualKeyboard;
+
   const KeyboardState({
     this.isConnected = false,
     this.mode = KeyboardMode.standard,
@@ -104,6 +107,7 @@ class KeyboardState extends Equatable {
     this.virtualDeviceStatus = '',
     this.uinputStatus = '',
     this.bluetoothHidStatus = '',
+    this.showVirtualKeyboard = false,
   });
 
   /// Initial state
@@ -139,6 +143,7 @@ class KeyboardState extends Equatable {
     String? virtualDeviceStatus,
     String? uinputStatus,
     String? bluetoothHidStatus,
+    bool? showVirtualKeyboard,
   }) {
     return KeyboardState(
       isConnected: isConnected ?? this.isConnected,
@@ -163,6 +168,7 @@ class KeyboardState extends Equatable {
       virtualDeviceStatus: virtualDeviceStatus ?? this.virtualDeviceStatus,
       uinputStatus: uinputStatus ?? this.uinputStatus,
       bluetoothHidStatus: bluetoothHidStatus ?? this.bluetoothHidStatus,
+      showVirtualKeyboard: showVirtualKeyboard ?? this.showVirtualKeyboard,
     );
   }
 
@@ -190,5 +196,6 @@ class KeyboardState extends Equatable {
     virtualDeviceStatus,
     uinputStatus,
     bluetoothHidStatus,
+    showVirtualKeyboard,
   ];
 }

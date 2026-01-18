@@ -249,23 +249,34 @@ class _KeyboardHeader extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              // Hide keyboard button
+              // Toggle virtual keyboard button
               GestureDetector(
-                onTap: () => _hideKeyboard(context),
+                onTap: () => context
+                    .read<KeyboardBloc>()
+                    .add(const KeyboardVirtualKeyboardToggled()),
                 child: Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
                     border: Border.all(
-                      color: const Color(
-                        TeleDeckColors.neonMagenta,
-                      ).withValues(alpha: 0.5),
-                      width: 1,
+                      color: state.showVirtualKeyboard
+                          ? const Color(TeleDeckColors.neonCyan)
+                          : const Color(TeleDeckColors.neonMagenta)
+                              .withValues(alpha: 0.5),
+                      width: state.showVirtualKeyboard ? 2 : 1,
                     ),
                     borderRadius: BorderRadius.circular(4),
+                    color: state.showVirtualKeyboard
+                        ? const Color(TeleDeckColors.neonCyan)
+                            .withValues(alpha: 0.15)
+                        : Colors.transparent,
                   ),
                   child: Icon(
-                    Icons.keyboard_hide,
-                    color: const Color(TeleDeckColors.neonMagenta),
+                    state.showVirtualKeyboard
+                        ? Icons.keyboard_hide
+                        : Icons.keyboard,
+                    color: state.showVirtualKeyboard
+                        ? const Color(TeleDeckColors.neonCyan)
+                        : const Color(TeleDeckColors.neonMagenta),
                     size: 16,
                   ),
                 ),
@@ -275,12 +286,6 @@ class _KeyboardHeader extends StatelessWidget {
         );
       },
     );
-  }
-
-  void _hideKeyboard(BuildContext context) {
-    // Use platform channel to hide keyboard
-    const channel = MethodChannel('tele_deck/ime');
-    channel.invokeMethod('hideKeyboard');
   }
 
   void _openImePicker(BuildContext context) {
@@ -337,11 +342,46 @@ class _KeyboardBody extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<KeyboardBloc, KeyboardState>(
       builder: (context, state) {
+        // Show fullscreen virtual keyboard if toggled
+        if (state.showVirtualKeyboard) {
+          return const _FullscreenVirtualKeyboard();
+        }
+
         // Show backend selection screen if enabled
         if (state.showBackendSelection) {
           return const _BackendSelectionView();
         }
 
+        Widget keyboardContent;
+        switch (state.mode) {
+          case KeyboardMode.numpad:
+            keyboardContent = const _NumpadLayout();
+          case KeyboardMode.emoji:
+            keyboardContent = const _EmojiLayout();
+          case KeyboardMode.standard:
+            keyboardContent = const _StandardLayout();
+        }
+
+        return Stack(
+          children: [
+            keyboardContent,
+            if (state.showModeSelector)
+              const Positioned.fill(child: ModeSelectorOverlay()),
+          ],
+        );
+      },
+    );
+  }
+}
+
+/// Fullscreen virtual keyboard widget
+class _FullscreenVirtualKeyboard extends StatelessWidget {
+  const _FullscreenVirtualKeyboard();
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<KeyboardBloc, KeyboardState>(
+      builder: (context, state) {
         Widget keyboardContent;
         switch (state.mode) {
           case KeyboardMode.numpad:

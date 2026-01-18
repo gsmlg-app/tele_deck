@@ -260,3 +260,8 @@ final class KeyboardBackendSelectionChanged extends KeyboardEvent {
   @override
   List<Object?> get props => [visible];
 }
+
+/// Toggle virtual keyboard visibility
+final class KeyboardVirtualKeyboardToggled extends KeyboardEvent {
+  const KeyboardVirtualKeyboardToggled();
+}

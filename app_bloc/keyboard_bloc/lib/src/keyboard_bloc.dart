@@ -41,6 +41,7 @@ class KeyboardBloc extends Bloc<KeyboardEvent, KeyboardState> {
     on<KeyboardCheckBackendAvailability>(_onCheckBackendAvailability);
     on<KeyboardSelectBackend>(_onSelectBackend);
     on<KeyboardBackendSelectionChanged>(_onBackendSelectionChanged);
+    on<KeyboardVirtualKeyboardToggled>(_onVirtualKeyboardToggled);
 
     // Set up IME callbacks
     _imeService.onConnectionStatusChanged = (isConnected) {
@@ -573,6 +574,13 @@ class KeyboardBloc extends Bloc<KeyboardEvent, KeyboardState> {
     Emitter<KeyboardState> emit,
   ) {
     emit(state.copyWith(showBackendSelection: event.visible));
+  }
+
+  void _onVirtualKeyboardToggled(
+    KeyboardVirtualKeyboardToggled event,
+    Emitter<KeyboardState> emit,
+  ) {
+    emit(state.copyWith(showVirtualKeyboard: !state.showVirtualKeyboard));
   }
 
   @override
