@@ -44,6 +44,9 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
+# Android NDK/CMake build artifacts
+**/.cxx/
+
 # claude commands and skills
 /.claude/*
 !/.claude/commands/
