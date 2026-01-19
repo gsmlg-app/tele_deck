@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:tele_deck/screens/app/shell_screen.dart';
 import 'package:tele_deck/screens/app/splash_screen.dart';
+import 'package:tele_deck/screens/emulate/fullscreen_keyboard_screen.dart';
 
 class AppRouter {
   static final GlobalKey<NavigatorState> navigatorKey =
@@ -57,6 +58,16 @@ class AppRouter {
           key: state.pageKey,
           restorationId: state.pageKey.value,
           child: const ShellScreen(),
+        );
+      },
+    ),
+    GoRoute(
+      name: FullscreenKeyboardScreen.name,
+      path: FullscreenKeyboardScreen.path,
+      pageBuilder: (context, state) {
+        return MaterialPage<void>(
+          key: state.pageKey,
+          child: const FullscreenKeyboardScreen(),
         );
       },
     ),

@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:keyboard_bloc/keyboard_bloc.dart';
+import 'package:keyboard_widgets/keyboard_widgets.dart';
 import 'package:settings_bloc/settings_bloc.dart';
-import 'package:tele_deck/screens/keyboard/keyboard_screen.dart';
 import 'package:tele_services/tele_services.dart';
 import 'package:tele_theme/tele_theme.dart';
 
@@ -123,7 +123,46 @@ class _TeleDeckKeyboardAppState extends State<TeleDeckKeyboardApp> {
           ),
         );
       },
-      home: const KeyboardScreen(),
+      home: const _ImeKeyboardScreen(),
+    );
+  }
+}
+
+/// IME keyboard screen - shows KeyboardView directly for actual IME input
+class _ImeKeyboardScreen extends StatelessWidget {
+  const _ImeKeyboardScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocListener<SettingsBloc, SettingsState>(
+      listenWhen: (previous, current) {
+        if (previous.status != SettingsStatus.success &&
+            current.status == SettingsStatus.success) {
+          return true;
+        }
+        if (previous.status == SettingsStatus.success &&
+            current.status == SettingsStatus.success &&
+            previous.settings.keyboardType != current.settings.keyboardType) {
+          return true;
+        }
+        return false;
+      },
+      listener: (context, settingsState) {
+        if (settingsState.status == SettingsStatus.success) {
+          context.read<KeyboardBloc>().add(
+                KeyboardTypeChanged(settingsState.settings.keyboardType),
+              );
+        }
+      },
+      child: BlocBuilder<SettingsBloc, SettingsState>(
+        builder: (context, settingsState) {
+          final rotation = settingsState.status == SettingsStatus.success
+              ? settingsState.settings.keyboardRotation
+              : 0;
+          // IME mode: no preview, no close button
+          return KeyboardView(rotation: rotation);
+        },
+      ),
     );
   }
 }

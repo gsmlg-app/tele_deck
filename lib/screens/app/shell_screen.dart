@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_adaptive_scaffold/flutter_adaptive_scaffold.dart';
 import 'package:tele_theme/tele_theme.dart';
 
-import '../home/home_screen.dart';
-import '../keyboard/keyboard_screen.dart';
+import '../emulate/emulate_screen.dart';
+import '../ime/ime_screen.dart';
 import '../settings/setting_screen.dart';
 
 /// Main shell screen with adaptive navigation (bottom nav / rail)
@@ -29,7 +29,7 @@ class _ShellScreenState extends State<ShellScreen> {
     NavigationDestination(
       icon: Icon(Icons.keyboard_outlined),
       selectedIcon: Icon(Icons.keyboard),
-      label: 'Keyboard',
+      label: 'Emulate',
     ),
     NavigationDestination(
       icon: Icon(Icons.settings_outlined),
@@ -38,14 +38,16 @@ class _ShellScreenState extends State<ShellScreen> {
     ),
   ];
 
+  void _onTabSelected(int index) {
+    setState(() => _selectedIndex = index);
+  }
+
   @override
   Widget build(BuildContext context) {
     return AdaptiveScaffold(
       destinations: _destinations,
       selectedIndex: _selectedIndex,
-      onSelectedIndexChange: (index) {
-        setState(() => _selectedIndex = index);
-      },
+      onSelectedIndexChange: _onTabSelected,
       body: (_) => _buildBody(),
       useDrawer: false,
       internalAnimations: false,
@@ -58,10 +60,10 @@ class _ShellScreenState extends State<ShellScreen> {
     return ColoredBox(
       color: const Color(TeleDeckColors.darkBackground),
       child: switch (_selectedIndex) {
-        0 => const HomeScreen(),
-        1 => const KeyboardScreen(),
+        0 => const ImeScreen(),
+        1 => const EmulateScreen(),
         2 => const SettingScreen(),
-        _ => const HomeScreen(),
+        _ => const ImeScreen(),
       },
     );
   }
