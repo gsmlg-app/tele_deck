@@ -24,8 +24,9 @@ const _shiftSymbolMap = {
 /// BLoC-based keyboard view for IME
 class KeyboardView extends StatelessWidget {
   final int rotation;
+  final VoidCallback? onClose;
 
-  const KeyboardView({super.key, this.rotation = 0});
+  const KeyboardView({super.key, this.rotation = 0, this.onClose});
 
   @override
   Widget build(BuildContext context) {
@@ -75,7 +76,7 @@ class KeyboardView extends StatelessWidget {
   Widget _buildLayout(BuildContext context, bool isPortrait) {
     return Column(
       children: [
-        _KeyboardHeader(),
+        _KeyboardHeader(onClose: onClose),
         Expanded(child: _KeyboardBody()),
       ],
     );
@@ -84,255 +85,234 @@ class KeyboardView extends StatelessWidget {
 
 /// Header bar with connection status
 class _KeyboardHeader extends StatelessWidget {
+  final VoidCallback? onClose;
+
+  const _KeyboardHeader({this.onClose});
+
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<KeyboardBloc, KeyboardState>(
       builder: (context, state) {
+        // Use fullscreen mode controls if onClose is provided
+        final controls = onClose != null
+            ? _buildFullscreenControls(context, state)
+            : _buildImeControls(context, state);
+
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
           decoration: BoxDecoration(
             border: Border(
               bottom: BorderSide(
-                color: const Color(
-                  TeleDeckColors.neonMagenta,
-                ).withValues(alpha: 0.3),
+                color: const Color(TeleDeckColors.neonMagenta).withValues(alpha: 0.3),
                 width: 1,
               ),
             ),
           ),
-          child: Row(
-            children: [
-              // IME picker button
-              GestureDetector(
-                onTap: () => _openImePicker(context),
-                child: Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    border: Border.all(
-                      color: const Color(
-                        TeleDeckColors.neonCyan,
-                      ).withValues(alpha: 0.5),
-                      width: 1,
-                    ),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Icon(
-                    Icons.keyboard_alt_outlined,
-                    color: const Color(TeleDeckColors.neonCyan),
-                    size: 16,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              // Settings info button
-              GestureDetector(
-                onTap: () => _showSettingsInfo(context),
-                child: Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    border: Border.all(
-                      color: const Color(
-                        TeleDeckColors.textPrimary,
-                      ).withValues(alpha: 0.3),
-                      width: 1,
-                    ),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Icon(
-                    Icons.settings,
-                    color: const Color(
-                      TeleDeckColors.textPrimary,
-                    ).withValues(alpha: 0.7),
-                    size: 16,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              // Title
-              ShaderMask(
-                shaderCallback: (bounds) => const LinearGradient(
-                  colors: [
-                    Color(TeleDeckColors.neonCyan),
-                    Color(TeleDeckColors.neonMagenta),
-                  ],
-                ).createShader(bounds),
-                child: Text(
-                  'CONTROL DECK',
-                  style: GoogleFonts.robotoMono(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                    letterSpacing: 3,
-                  ),
-                ),
-              ),
-              const Spacer(),
-              // Keyboard type indicator
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 6,
-                ),
-                margin: const EdgeInsets.only(right: 8),
-                decoration: BoxDecoration(
-                  border: Border.all(
-                    color: state.keyboardType == KeyboardType.physical
-                        ? const Color(TeleDeckColors.neonMagenta)
-                        : const Color(TeleDeckColors.neonCyan).withValues(alpha: 0.5),
-                    width: 1,
-                  ),
-                  borderRadius: BorderRadius.circular(4),
-                  color: state.keyboardType == KeyboardType.physical
-                      ? const Color(TeleDeckColors.neonMagenta).withValues(alpha: 0.15)
-                      : Colors.transparent,
-                ),
-                child: Text(
-                  state.keyboardType == KeyboardType.physical ? 'PHY' : 'IME',
-                  style: GoogleFonts.robotoMono(
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                    color: state.keyboardType == KeyboardType.physical
-                        ? const Color(TeleDeckColors.neonMagenta)
-                        : const Color(TeleDeckColors.textPrimary).withValues(alpha: 0.7),
-                    letterSpacing: 1,
-                  ),
-                ),
-              ),
-              // Connection indicator
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  border: Border.all(
-                    color: state.isConnected
-                        ? const Color(TeleDeckColors.neonCyan)
-                        : Colors.red.withValues(alpha: 0.5),
-                    width: 1,
-                  ),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 6,
-                      height: 6,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: state.isConnected
-                            ? const Color(TeleDeckColors.neonCyan)
-                            : Colors.red,
-                        boxShadow: [
-                          BoxShadow(
-                            color:
-                                (state.isConnected
-                                        ? const Color(TeleDeckColors.neonCyan)
-                                        : Colors.red)
-                                    .withValues(alpha: 0.5),
-                            blurRadius: 4,
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      state.isConnected ? 'LINKED' : 'SYNC',
-                      style: GoogleFonts.robotoMono(
-                        fontSize: 10,
-                        color: const Color(TeleDeckColors.textPrimary),
-                        letterSpacing: 1,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              // Toggle virtual keyboard button
-              GestureDetector(
-                onTap: () => context
-                    .read<KeyboardBloc>()
-                    .add(const KeyboardVirtualKeyboardToggled()),
-                child: Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    border: Border.all(
-                      color: state.showVirtualKeyboard
-                          ? const Color(TeleDeckColors.neonCyan)
-                          : const Color(TeleDeckColors.neonMagenta)
-                              .withValues(alpha: 0.5),
-                      width: state.showVirtualKeyboard ? 2 : 1,
-                    ),
-                    borderRadius: BorderRadius.circular(4),
-                    color: state.showVirtualKeyboard
-                        ? const Color(TeleDeckColors.neonCyan)
-                            .withValues(alpha: 0.15)
-                        : Colors.transparent,
-                  ),
-                  child: Icon(
-                    state.showVirtualKeyboard
-                        ? Icons.keyboard_hide
-                        : Icons.keyboard,
-                    color: state.showVirtualKeyboard
-                        ? const Color(TeleDeckColors.neonCyan)
-                        : const Color(TeleDeckColors.neonMagenta),
-                    size: 16,
-                  ),
-                ),
-              ),
-            ],
-          ),
+          child: Row(children: controls),
         );
       },
     );
   }
 
-  void _openImePicker(BuildContext context) {
-    // Use platform channel to open system IME picker
-    const channel = MethodChannel('tele_deck/ime');
-    channel.invokeMethod('openImePicker');
-  }
+  /// Fullscreen mode controls (when opened from EmulateScreen)
+  List<Widget> _buildFullscreenControls(BuildContext context, KeyboardState state) {
+    final isConnected = state.isEmulationInitialized;
 
-  void _showSettingsInfo(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(TeleDeckColors.secondaryBackground),
-        title: Text(
-          'SETTINGS',
+    return [
+      // Title
+      ShaderMask(
+        shaderCallback: (bounds) => const LinearGradient(
+          colors: [
+            Color(TeleDeckColors.neonCyan),
+            Color(TeleDeckColors.neonMagenta),
+          ],
+        ).createShader(bounds),
+        child: Text(
+          'KEYBOARD',
           style: GoogleFonts.robotoMono(
-            color: const Color(TeleDeckColors.neonCyan),
+            fontSize: 16,
             fontWeight: FontWeight.bold,
-            letterSpacing: 2,
+            color: Colors.white,
+            letterSpacing: 3,
           ),
         ),
-        content: Column(
+      ),
+      const SizedBox(width: 12),
+      // Connection status
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: isConnected
+                ? const Color(TeleDeckColors.neonCyan).withValues(alpha: 0.5)
+                : Colors.red.withValues(alpha: 0.5),
+            width: 1,
+          ),
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Row(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Container(
+              width: 6,
+              height: 6,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isConnected ? const Color(TeleDeckColors.neonCyan) : Colors.red,
+              ),
+            ),
+            const SizedBox(width: 6),
             Text(
-              'Open the TeleDeck app on the main screen to access settings.',
+              isConnected ? 'READY' : 'NOT CONNECTED',
               style: GoogleFonts.robotoMono(
-                color: const Color(TeleDeckColors.textPrimary),
-                fontSize: 14,
+                fontSize: 9,
+                fontWeight: FontWeight.bold,
+                color: isConnected ? const Color(TeleDeckColors.neonCyan) : Colors.red,
               ),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              'CLOSE',
-              style: GoogleFonts.robotoMono(
-                color: const Color(TeleDeckColors.neonCyan),
+      ),
+      const Spacer(),
+      // Close button
+      GestureDetector(
+        onTap: onClose,
+        child: Container(
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: const Color(TeleDeckColors.neonMagenta).withValues(alpha: 0.5),
+              width: 1,
+            ),
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Icon(
+            Icons.close,
+            color: const Color(TeleDeckColors.neonMagenta),
+            size: 16,
+          ),
+        ),
+      ),
+    ];
+  }
+
+  /// IME mode controls (when running as system IME)
+  List<Widget> _buildImeControls(BuildContext context, KeyboardState state) {
+    return [
+      // IME picker button
+      GestureDetector(
+        onTap: () => _openImePicker(context),
+        child: Container(
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: const Color(TeleDeckColors.neonCyan).withValues(alpha: 0.5),
+              width: 1,
+            ),
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Icon(
+            Icons.keyboard_alt_outlined,
+            color: const Color(TeleDeckColors.neonCyan),
+            size: 16,
+          ),
+        ),
+      ),
+      const SizedBox(width: 12),
+      // Title
+      ShaderMask(
+        shaderCallback: (bounds) => const LinearGradient(
+          colors: [
+            Color(TeleDeckColors.neonCyan),
+            Color(TeleDeckColors.neonMagenta),
+          ],
+        ).createShader(bounds),
+        child: Text(
+          'KEYBOARD',
+          style: GoogleFonts.robotoMono(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+            letterSpacing: 3,
+          ),
+        ),
+      ),
+      const Spacer(),
+      // Connection indicator
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: state.isConnected
+                ? const Color(TeleDeckColors.neonCyan)
+                : Colors.red.withValues(alpha: 0.5),
+            width: 1,
+          ),
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 6,
+              height: 6,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: state.isConnected ? const Color(TeleDeckColors.neonCyan) : Colors.red,
+                boxShadow: [
+                  BoxShadow(
+                    color: (state.isConnected
+                            ? const Color(TeleDeckColors.neonCyan)
+                            : Colors.red)
+                        .withValues(alpha: 0.5),
+                    blurRadius: 4,
+                  ),
+                ],
               ),
             ),
-          ),
-        ],
+            const SizedBox(width: 8),
+            Text(
+              state.isConnected ? 'LINKED' : 'SYNC',
+              style: GoogleFonts.robotoMono(
+                fontSize: 10,
+                color: const Color(TeleDeckColors.textPrimary),
+                letterSpacing: 1,
+              ),
+            ),
+          ],
+        ),
       ),
-    );
+      const SizedBox(width: 8),
+      // Hide keyboard button
+      GestureDetector(
+        onTap: () => _hideKeyboard(context),
+        child: Container(
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: const Color(TeleDeckColors.neonMagenta).withValues(alpha: 0.5),
+              width: 1,
+            ),
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Icon(
+            Icons.keyboard_hide,
+            color: const Color(TeleDeckColors.neonMagenta),
+            size: 16,
+          ),
+        ),
+      ),
+    ];
+  }
+
+  void _openImePicker(BuildContext context) {
+    const channel = MethodChannel('tele_deck/ime');
+    channel.invokeMethod('openImePicker');
+  }
+
+  void _hideKeyboard(BuildContext context) {
+    const channel = MethodChannel('tele_deck/ime');
+    channel.invokeMethod('hideKeyboard');
   }
 }
 

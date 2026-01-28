@@ -56,6 +56,11 @@ class ImeScreen extends StatelessWidget {
                 _buildImeStatusCard(state),
                 const SizedBox(height: 32),
                 _buildActionSection(context, state),
+                // Show test input when IME is active
+                if (state.imeActive) ...[
+                  const SizedBox(height: 32),
+                  const _TestInputSection(),
+                ],
               ],
             ),
           );
@@ -306,6 +311,130 @@ class _ActionButton extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Test input section for testing the keyboard
+class _TestInputSection extends StatefulWidget {
+  const _TestInputSection();
+
+  @override
+  State<_TestInputSection> createState() => _TestInputSectionState();
+}
+
+class _TestInputSectionState extends State<_TestInputSection> {
+  final _textController = TextEditingController();
+  final _focusNode = FocusNode();
+
+  @override
+  void dispose() {
+    _textController.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: const Color(TeleDeckColors.secondaryBackground),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: const Color(TeleDeckColors.neonMagenta).withValues(alpha: 0.3),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.edit_note,
+                color: const Color(TeleDeckColors.neonMagenta),
+                size: 24,
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Test Input',
+                style: GoogleFonts.robotoMono(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(TeleDeckColors.textPrimary),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Tap below to test the TeleDeck keyboard',
+            style: GoogleFonts.robotoMono(
+              fontSize: 11,
+              color: const Color(TeleDeckColors.textPrimary).withValues(alpha: 0.6),
+            ),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _textController,
+            focusNode: _focusNode,
+            maxLines: 3,
+            style: GoogleFonts.robotoMono(
+              fontSize: 14,
+              color: const Color(TeleDeckColors.textPrimary),
+            ),
+            decoration: InputDecoration(
+              hintText: 'Type here to test...',
+              hintStyle: GoogleFonts.robotoMono(
+                fontSize: 14,
+                color: const Color(TeleDeckColors.textPrimary).withValues(alpha: 0.3),
+              ),
+              filled: true,
+              fillColor: const Color(TeleDeckColors.darkBackground),
+              contentPadding: const EdgeInsets.all(16),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(
+                  color: const Color(TeleDeckColors.neonCyan).withValues(alpha: 0.3),
+                ),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(
+                  color: const Color(TeleDeckColors.neonCyan).withValues(alpha: 0.3),
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(
+                  color: Color(TeleDeckColors.neonCyan),
+                  width: 2,
+                ),
+              ),
+            ),
+            cursorColor: const Color(TeleDeckColors.neonCyan),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton(
+                onPressed: () {
+                  _textController.clear();
+                  _focusNode.unfocus();
+                },
+                child: Text(
+                  'Clear',
+                  style: GoogleFonts.robotoMono(
+                    fontSize: 12,
+                    color: const Color(TeleDeckColors.textPrimary).withValues(alpha: 0.6),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
