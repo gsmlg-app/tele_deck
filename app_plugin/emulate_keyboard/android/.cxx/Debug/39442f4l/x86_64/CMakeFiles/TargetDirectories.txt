@@ -1,3 +1,0 @@
-/Users/gao/Workspace/gsmlg-app/tele_deck/app_plugin/emulate_keyboard/android/.cxx/Debug/39442f4l/x86_64/CMakeFiles/uinput_keyboard.dir
-/Users/gao/Workspace/gsmlg-app/tele_deck/app_plugin/emulate_keyboard/android/.cxx/Debug/39442f4l/x86_64/CMakeFiles/edit_cache.dir
-/Users/gao/Workspace/gsmlg-app/tele_deck/app_plugin/emulate_keyboard/android/.cxx/Debug/39442f4l/x86_64/CMakeFiles/rebuild_cache.dir

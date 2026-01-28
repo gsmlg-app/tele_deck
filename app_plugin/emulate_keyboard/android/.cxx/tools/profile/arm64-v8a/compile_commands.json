@@ -1,7 +1,0 @@
-[
-{
-  "directory": "/Users/gao/Workspace/gsmlg-app/tele_deck/app_plugin/emulate_keyboard/android/.cxx/Debug/39442f4l/arm64-v8a",
-  "command": "/Users/gao/Library/Android/sdk/ndk/27.0.12077973/toolchains/llvm/prebuilt/darwin-x86_64/bin/clang++ --target=aarch64-none-linux-android26 --sysroot=/Users/gao/Library/Android/sdk/ndk/27.0.12077973/toolchains/llvm/prebuilt/darwin-x86_64/sysroot -Duinput_keyboard_EXPORTS -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security  -std=c++17 -fno-limit-debug-info  -fPIC -o CMakeFiles/uinput_keyboard.dir/uinput_keyboard.cpp.o -c /Users/gao/Workspace/gsmlg-app/tele_deck/app_plugin/emulate_keyboard/android/src/main/cpp/uinput_keyboard.cpp",
-  "file": "/Users/gao/Workspace/gsmlg-app/tele_deck/app_plugin/emulate_keyboard/android/src/main/cpp/uinput_keyboard.cpp"
-}
-]
