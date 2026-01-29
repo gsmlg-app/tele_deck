@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:keyboard_widgets/keyboard_widgets.dart';
-import 'package:settings_bloc/settings_bloc.dart';
 
-/// Fullscreen keyboard screen - outside the shell navigation
+/// Fullscreen keyboard screen - outside the shell navigation.
+/// Uses rotation: 0 so the keyboard follows the device's natural orientation.
+/// (The keyboardRotation setting is for the dual-screen IME context only.)
 class FullscreenKeyboardScreen extends StatelessWidget {
   static const name = 'FullscreenKeyboard';
   static const path = '/keyboard';
@@ -13,16 +13,8 @@ class FullscreenKeyboardScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<SettingsBloc, SettingsState>(
-      builder: (context, settingsState) {
-        final rotation = settingsState.status == SettingsStatus.success
-            ? settingsState.settings.keyboardRotation
-            : 0;
-        return KeyboardView(
-          rotation: rotation,
-          onClose: () => context.pop(),
-        );
-      },
+    return KeyboardView(
+      onClose: () => context.pop(),
     );
   }
 }

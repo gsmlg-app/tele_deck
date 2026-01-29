@@ -84,17 +84,57 @@ class KeyboardView extends StatelessWidget {
 }
 
 /// Header bar with connection status
-class _KeyboardHeader extends StatelessWidget {
+class _KeyboardHeader extends StatefulWidget {
   final VoidCallback? onClose;
 
   const _KeyboardHeader({this.onClose});
+
+  @override
+  State<_KeyboardHeader> createState() => _KeyboardHeaderState();
+}
+
+class _KeyboardHeaderState extends State<_KeyboardHeader> {
+  bool _rotationLocked = false;
+
+  @override
+  void dispose() {
+    // Restore all orientations when leaving
+    if (_rotationLocked) {
+      SystemChrome.setPreferredOrientations(DeviceOrientation.values);
+    }
+    super.dispose();
+  }
+
+  void _toggleRotationLock() {
+    setState(() {
+      _rotationLocked = !_rotationLocked;
+    });
+
+    if (_rotationLocked) {
+      // Lock to current orientation
+      final orientation = MediaQuery.of(context).orientation;
+      if (orientation == Orientation.landscape) {
+        SystemChrome.setPreferredOrientations([
+          DeviceOrientation.landscapeLeft,
+          DeviceOrientation.landscapeRight,
+        ]);
+      } else {
+        SystemChrome.setPreferredOrientations([
+          DeviceOrientation.portraitUp,
+          DeviceOrientation.portraitDown,
+        ]);
+      }
+    } else {
+      SystemChrome.setPreferredOrientations(DeviceOrientation.values);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<KeyboardBloc, KeyboardState>(
       builder: (context, state) {
         // Use fullscreen mode controls if onClose is provided
-        final controls = onClose != null
+        final controls = widget.onClose != null
             ? _buildFullscreenControls(context, state)
             : _buildImeControls(context, state);
 
@@ -119,6 +159,38 @@ class _KeyboardHeader extends StatelessWidget {
     final isConnected = state.isEmulationInitialized;
 
     return [
+      // Lock rotation button
+      GestureDetector(
+        onTap: _toggleRotationLock,
+        child: Container(
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: _rotationLocked
+                  ? const Color(TeleDeckColors.neonCyan).withValues(alpha: 0.8)
+                  : const Color(TeleDeckColors.neonCyan).withValues(alpha: 0.3),
+              width: 1,
+            ),
+            borderRadius: BorderRadius.circular(4),
+            boxShadow: _rotationLocked
+                ? [
+                    BoxShadow(
+                      color: const Color(TeleDeckColors.neonCyan).withValues(alpha: 0.3),
+                      blurRadius: 6,
+                    ),
+                  ]
+                : null,
+          ),
+          child: Icon(
+            _rotationLocked ? Icons.screen_lock_rotation : Icons.screen_rotation,
+            color: _rotationLocked
+                ? const Color(TeleDeckColors.neonCyan)
+                : const Color(TeleDeckColors.neonCyan).withValues(alpha: 0.7),
+            size: 16,
+          ),
+        ),
+      ),
+      const SizedBox(width: 8),
       // Title
       ShaderMask(
         shaderCallback: (bounds) => const LinearGradient(
@@ -176,7 +248,7 @@ class _KeyboardHeader extends StatelessWidget {
       const Spacer(),
       // Close button
       GestureDetector(
-        onTap: onClose,
+        onTap: widget.onClose,
         child: Container(
           padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(

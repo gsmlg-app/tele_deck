@@ -100,7 +100,7 @@ class KeyboardState extends Equatable {
     this.emulationBackend = EmulationBackend.virtualDevice,
     this.isEmulationInitialized = false,
     this.emulationStatus = '',
-    this.showBackendSelection = true,
+    this.showBackendSelection = false,
     this.virtualDeviceAvailability = BackendAvailability.unknown,
     this.uinputAvailability = BackendAvailability.unknown,
     this.bluetoothHidAvailability = BackendAvailability.unknown,
